@@ -13,9 +13,7 @@ const dts = `
   // THIS IS AN AUTO-GENERATED FILE BY /scripts/updateTypes.ts
   import { Command } from "../commands";
   export type CommandName = ${commandNames.map((n) => `"${n}"`).join(" | ")}
-  export type CommandsMap = {
-  ${commandNames.map((n) => `  ${n}: Command;`).join("\n")}
-  }
+  export type CommandsMap = Record<CommandName, Command>;
   `;
 
 const targetDir = path.resolve(import.meta.dirname, "../types/generated");
