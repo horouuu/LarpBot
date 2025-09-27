@@ -3,5 +3,8 @@
     "discord.js": "^14.22.1",
     "dotenv": "^17.2.2"
   },
-  "type": "module"
+  "type": "module",
+  "devDependencies": {
+    "tsx": "^4.20.6"
+  }
 }
