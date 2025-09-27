@@ -57,8 +57,8 @@ client.on(Events.InteractionCreate, async (interaction) => {
 // message handler
 client.on(Events.MessageCreate, async (msg) => {
   if (
-    msg.guildId != "407456512366084097" ||
-    msg.channelId != "474570283886575657" ||
+    msg.guildId != process.env.TARGET_GUILD_ID ||
+    msg.channelId != process.env.TARGET_CHANNEL_ID ||
     msg.type != MessageType.UserJoin
   )
     return;
@@ -79,11 +79,11 @@ client.on(Events.MessageReactionAdd, async (reaction) => {
   }
 
   if (
-    reaction.message.guildId != "407456512366084097" ||
-    reaction.message.channelId != "474570283886575657"
+    reaction.message.guildId != process.env.TARGET_GUILD_ID ||
+    reaction.message.channelId != process.env.TARGET_CHANNEL_ID ||
+    reaction.message.type != MessageType.UserJoin
   )
     return;
-
   const emojiName = reaction.emoji.name;
   const cache = reaction.message.reactions.cache;
   const memberId = reaction.message.author?.id;
