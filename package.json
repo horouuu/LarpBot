@@ -5,6 +5,12 @@
   },
   "type": "module",
   "devDependencies": {
+    "tsc-alias": "^1.8.16",
     "tsx": "^4.20.6"
+  },
+  "scripts": {
+    "build": "tsc && tsc-alias",
+    "start": "node ./build/bot.js",
+    "dev": "npx tsx ./src/bot.ts"
   }
 }
