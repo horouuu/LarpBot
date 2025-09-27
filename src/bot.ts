@@ -25,6 +25,8 @@ const client = new Client({
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.GuildMessageReactions,
+    GatewayIntentBits.GuildMembers,
+    GatewayIntentBits.GuildModeration,
     GatewayIntentBits.MessageContent,
   ],
   partials: [Partials.Message, Partials.Channel, Partials.Reaction],
@@ -62,6 +64,7 @@ client.on(Events.MessageCreate, async (msg) => {
     return;
 
   msg.react("✅");
+  msg.react("❌");
 });
 
 // reactions handler
@@ -81,11 +84,28 @@ client.on(Events.MessageReactionAdd, async (reaction) => {
   )
     return;
 
+  const emojiName = reaction.emoji.name;
   const cache = reaction.message.reactions.cache;
-  if (cache.has("✅")) {
-    const count = cache.get("✅")?.count ?? 0;
-    if (count - 1 >= 2) {
-      console.log("User verified!");
+  const memberId = reaction.message.author?.id;
+  if (!memberId) return;
+  const member = await reaction.message.guild?.members.fetch(memberId);
+
+  if (cache.has("🎉") || cache.has("👋")) return;
+  if ((emojiName == "❌" || emojiName == "✅") && cache.has(emojiName)) {
+    const count = cache.get(emojiName)?.count ?? 0;
+    if (count - 1 >= 1) {
+      if (emojiName == "❌") {
+        reaction.message.react("👋");
+        if (member?.bannable)
+          member.ban({ reason: "You were rejected. Sorry!" });
+      } else {
+        reaction.message.react("🎉");
+        try {
+          member?.roles.add("1420762163991150723");
+        } catch (e) {
+          console.error(e);
+        }
+      }
       return;
     }
   }
