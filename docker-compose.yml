@@ -1,0 +1,14 @@
+version: "3.9"
+
+services:
+  bot:
+    build: .
+    container_name: larpbot
+    restart: unless-stopped
+    environment:
+      TOKEN: "${TOKEN}"
+      APP_ID: "${APP_ID}"
+      TARGET_GUILD_ID: "${TARGET_GUILD_ID}"
+      TARGET_CHANNEL_ID: "${TARGET_CHANNEL_ID}"
+      MEMBER_ROLE_ID: "${MEMBER_ROLE_ID}"
+      ACTION_THRESHOLD: "${ACTION_THRESHOLD:-3}"
