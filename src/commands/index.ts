@@ -1,18 +1,20 @@
 import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { Command } from "../types/commands";
+import { Command } from "@types-local/commands";
 
 export type CommandsMap = {
   ping: Command;
 };
 
+const extension: string = process.env.NODE_ENV !== "production" ? ".ts" : ".js";
+
 export async function loadCommands(): Promise<CommandsMap> {
   const currentPath = import.meta.dirname;
   const files = fs
     .readdirSync(currentPath)
-    .filter((f) => f !== "index.ts")
-    .filter((f) => f.endsWith(".ts"));
+    .filter((f) => f !== `index${extension}`)
+    .filter((f) => f.endsWith(extension));
 
   const commands = await Promise.all(
     files.map(async (f) => {

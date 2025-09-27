@@ -1,5 +1,5 @@
 import { CacheType, Interaction } from "discord.js";
-import { Command } from "../types/commands";
+import { Command } from "@types-local/commands";
 
 const ping = {
   name: "ping",

@@ -7,21 +7,21 @@ import {
   Routes,
 } from "discord.js";
 import { Client, Events, GatewayIntentBits } from "discord.js";
-import dotenv from "dotenv";
-import { loadCommands } from "./commands";
-import { CommandName, CommandsMap } from "./types/generated/commands";
+import { Config } from "@config";
+import { loadCommands } from "@commands/index.js";
+import { CommandName, CommandsMap } from "@types-local/generated/commands";
 
-dotenv.config({ path: "../.env" });
+Config.load();
 
 const commands = await loadCommands();
-const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);
+const rest = new REST({ version: "10" }).setToken(Config.token);
 
 console.log(`Loaded commands:\n\n ${JSON.stringify(commands, null, 2)}`);
 
 try {
   console.log("Started refreshing application commands.");
 
-  await rest.put(Routes.applicationCommands(process.env.APP_ID), {
+  await rest.put(Routes.applicationCommands(Config.appId), {
     body: Object.values(commands),
   });
 } catch (err) {
@@ -70,8 +70,8 @@ client.on(Events.InteractionCreate, async (interaction) => {
 // message handler
 client.on(Events.MessageCreate, async (msg) => {
   if (
-    msg.guildId != process.env.TARGET_GUILD_ID ||
-    msg.channelId != process.env.TARGET_CHANNEL_ID ||
+    msg.guildId != Config.targetGuildId ||
+    msg.channelId != Config.targetChannelId ||
     msg.type != MessageType.UserJoin
   )
     return;
@@ -92,8 +92,8 @@ client.on(Events.MessageReactionAdd, async (reaction) => {
   }
 
   if (
-    reaction.message.guildId != process.env.TARGET_GUILD_ID ||
-    reaction.message.channelId != process.env.TARGET_CHANNEL_ID ||
+    reaction.message.guildId != Config.targetGuildId ||
+    reaction.message.channelId != Config.targetChannelId ||
     reaction.message.type != MessageType.UserJoin
   )
     return;
@@ -106,14 +106,14 @@ client.on(Events.MessageReactionAdd, async (reaction) => {
   if (cache.has("🎉") || cache.has("👋")) return;
   if ((emojiName == "❌" || emojiName == "✅") && cache.has(emojiName)) {
     const count = cache.get(emojiName)?.count ?? 0;
-    if (count - 1 >= process.env.ACTION_THRESHOLD) {
+    if (count - 1 >= Config.actionThreshold) {
       if (emojiName == "❌") {
         reaction.message.react("👋");
         if (member?.bannable) member.ban({ reason: "Rejected by bot." });
       } else {
         reaction.message.react("🎉");
         try {
-          member?.roles.add(process.env.MEMBER_ROLE_ID);
+          member?.roles.add(Config.memberRoleId);
         } catch (e) {
           console.error(e);
         }
@@ -123,4 +123,4 @@ client.on(Events.MessageReactionAdd, async (reaction) => {
   }
 });
 
-client.login(process.env.TOKEN);
+client.login(Config.token);
