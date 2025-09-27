@@ -1,7 +1,15 @@
-import { MessageType, Partials, REST, Routes } from "discord.js";
+import {
+  ChatInputCommandInteraction,
+  Interaction,
+  MessageType,
+  Partials,
+  REST,
+  Routes,
+} from "discord.js";
 import { Client, Events, GatewayIntentBits } from "discord.js";
 import dotenv from "dotenv";
 import { loadCommands } from "./commands";
+import { CommandName, CommandsMap } from "./types/generated/commands";
 
 dotenv.config({ path: "../.env" });
 
@@ -38,8 +46,15 @@ client.on(Events.ClientReady, async (readyClient) => {
 });
 
 // command handler
+function isKnownChatCommand(
+  i: Interaction,
+  cmds: CommandsMap
+): i is ChatInputCommandInteraction & { commandName: CommandName } {
+  return i.isChatInputCommand() && i.commandName in cmds;
+}
+
 client.on(Events.InteractionCreate, async (interaction) => {
-  if (!interaction.isChatInputCommand()) return;
+  if (!isKnownChatCommand(interaction, commands)) return;
 
   console.log(
     `\n➡️   Command [${interaction.commandName}] called by user ${
@@ -49,9 +64,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
     }`
   );
 
-  if (interaction.commandName in commands) {
-    await commands[interaction.commandName].execute(interaction);
-  }
+  await commands[interaction.commandName].execute(interaction);
 });
 
 // message handler
