@@ -106,15 +106,14 @@ client.on(Events.MessageReactionAdd, async (reaction) => {
   if (cache.has("🎉") || cache.has("👋")) return;
   if ((emojiName == "❌" || emojiName == "✅") && cache.has(emojiName)) {
     const count = cache.get(emojiName)?.count ?? 0;
-    if (count - 1 >= 1) {
+    if (count - 1 >= process.env.ACTION_THRESHOLD) {
       if (emojiName == "❌") {
         reaction.message.react("👋");
-        if (member?.bannable)
-          member.ban({ reason: "You were rejected. Sorry!" });
+        if (member?.bannable) member.ban({ reason: "Rejected by bot." });
       } else {
         reaction.message.react("🎉");
         try {
-          member?.roles.add("1420762163991150723");
+          member?.roles.add(process.env.MEMBER_ROLE_ID);
         } catch (e) {
           console.error(e);
         }
