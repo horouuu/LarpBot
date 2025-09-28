@@ -12,7 +12,8 @@
       "@commands/*": ["commands/*"],
       "@/*": ["*"],
       "@types-local/*": ["types/*"],
-      "@config": ["config.ts"]
+      "@config": ["config.ts"],
+      "@handlers/*": ["handlers/*"]
     }
   },
   "exclude": ["./node_modules", "./src/scripts/updateTypes.ts"]
