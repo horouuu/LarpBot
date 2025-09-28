@@ -1,5 +1,6 @@
 import {
   ChatInputCommandInteraction,
+  GuildMember,
   Interaction,
   MessageType,
   Partials,
@@ -53,6 +54,10 @@ function isKnownChatCommand(
   return i.isChatInputCommand() && i.commandName in cmds;
 }
 
+function getMemberNickname(member: GuildMember) {
+  return member.nickname ? `(${member.nickname})` : "";
+}
+
 client.on(Events.InteractionCreate, async (interaction) => {
   if (!isKnownChatCommand(interaction, commands)) return;
 
@@ -60,7 +65,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
     `\n➡️   Command [${interaction.commandName}] called by user ${
       interaction.user.username
     } | ${interaction.user.id} ${
-      interaction.inCachedGuild() ? `(${interaction.member.nickname})` : null
+      interaction.inCachedGuild() ? getMemberNickname(interaction.member) : null
     }`
   );
 
