@@ -9,6 +9,10 @@ export async function messageHandler(msg: Message, config: Config) {
   )
     return;
 
-  msg.react("✅");
-  msg.react("❌");
+  try {
+    await msg.react("✅");
+    await msg.react("❌");
+  } catch (e) {
+    console.error(e);
+  }
 }

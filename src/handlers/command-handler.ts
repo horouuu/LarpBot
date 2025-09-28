@@ -28,7 +28,10 @@ export async function initCommands() {
   return commands;
 }
 
-export async function commandHandler(interaction: Interaction, commands: CommandsMap) {
+export async function commandHandler(
+  interaction: Interaction,
+  commands: CommandsMap
+) {
   if (!isKnownChatCommand(interaction, commands)) return;
 
   console.log(
@@ -39,7 +42,23 @@ export async function commandHandler(interaction: Interaction, commands: Command
     }`
   );
 
-  await commands[interaction.commandName].execute(interaction);
+  try {
+    await commands[interaction.commandName].execute(interaction);
+  } catch (e) {
+    console.error(e);
+
+    try {
+      const notifMsg =
+        "Something went wrong! Please contact the developer for help.";
+      if (interaction.replied || interaction.deferred) {
+        interaction.followUp(notifMsg);
+      } else {
+        interaction.reply(notifMsg);
+      }
+    } catch (e) {
+      console.error("Error notification failed to send:\n", e);
+    }
+  }
 }
 
 function isKnownChatCommand(
