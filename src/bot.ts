@@ -24,7 +24,7 @@ client.on(Events.ClientReady, async (readyClient) => {
   console.log(`Successfully logged in as ${readyClient.user.tag}!`);
 });
 
-const commands = await initCommands();
+const commands = await initCommands(Config);
 client.on(Events.InteractionCreate, (interaction) =>
   commandHandler(interaction, commands)
 );

@@ -1,4 +1,4 @@
-import { Config } from "@/config";
+import type { Config as ConfigType } from "@config";
 import { CommandName } from "@/types/generated/commands";
 import { CommandsMap, loadCommands } from "@commands";
 import {
@@ -9,16 +9,16 @@ import {
   Routes,
 } from "discord.js";
 
-export async function initCommands() {
+export async function initCommands(config: ConfigType) {
   const commands = await loadCommands();
-  const rest = new REST({ version: "10" }).setToken(Config.token);
+  const rest = new REST({ version: "10" }).setToken(config.token);
 
   console.log(`\nLoaded commands:\n ${JSON.stringify(commands, null, 2)}\n`);
 
   try {
     console.log("Started refreshing application commands.");
 
-    await rest.put(Routes.applicationCommands(Config.appId), {
+    await rest.put(Routes.applicationCommands(config.appId), {
       body: Object.values(commands),
     });
   } catch (err) {
