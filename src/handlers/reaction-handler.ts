@@ -35,12 +35,12 @@ export async function reactionHandler(
     const count = cache.get(emojiName)?.count ?? 0;
     if (count - 1 >= config.actionThreshold) {
       if (emojiName == "❌") {
-        reaction.message.react("👋");
+        await reaction.message.react("👋");
         if (member?.bannable) member.ban({ reason: "Rejected by bot." });
       } else {
-        reaction.message.react("🎉");
+        await reaction.message.react("🎉");
         try {
-          await member?.roles.add(Config.memberRoleId);
+          await member?.roles.add(config.memberRoleId);
         } catch (e) {
           console.error(e);
         }
