@@ -1,5 +1,6 @@
 import { Config } from "@/config";
 import {
+  DiscordAPIError,
   MessageReaction,
   MessageType,
   PartialMessageReaction,
@@ -48,6 +49,16 @@ export async function reactionHandler(
         return;
       } catch (e) {
         console.error(e);
+
+        if (e instanceof DiscordAPIError && e.code == 50013) {
+          try {
+            reaction.message.reply(
+              "I don't seem to have permissions to take action here. Please update my permissions and react to the vote again."
+            );
+          } catch (e) {
+            console.error("Failed to follow up on error:\n", e);
+          }
+        }
       }
     }
   }
