@@ -18,6 +18,15 @@ function assertLoaded<T>(val: T | undefined, name: string) {
   return val;
 }
 
+export type Config = {
+  actionThreshold: number;
+  token: string;
+  appId: string;
+  targetGuildId: string;
+  targetChannelId: string;
+  memberRoleId: string;
+};
+
 export const Config = {
   load() {
     if (process.env.NODE_ENV !== "production") {

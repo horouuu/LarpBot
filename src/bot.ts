@@ -1,33 +1,11 @@
-import {
-  ChatInputCommandInteraction,
-  GuildMember,
-  Interaction,
-  MessageType,
-  Partials,
-  REST,
-  Routes,
-} from "discord.js";
+import { Partials } from "discord.js";
 import { Client, Events, GatewayIntentBits } from "discord.js";
 import { Config } from "@config";
-import { loadCommands } from "@commands/index.js";
-import { CommandName, CommandsMap } from "@types-local/generated/commands";
+import { commandHandler, initCommands } from "@handlers/command-handler.js";
+import { messageHandler } from "@handlers/message-handler.js";
+import { reactionHandler } from "@handlers/reaction-handler.js";
 
 Config.load();
-
-const commands = await loadCommands();
-const rest = new REST({ version: "10" }).setToken(Config.token);
-
-console.log(`Loaded commands:\n\n ${JSON.stringify(commands, null, 2)}`);
-
-try {
-  console.log("Started refreshing application commands.");
-
-  await rest.put(Routes.applicationCommands(Config.appId), {
-    body: Object.values(commands),
-  });
-} catch (err) {
-  console.error(err);
-}
 
 const client = new Client({
   intents: [
@@ -46,86 +24,15 @@ client.on(Events.ClientReady, async (readyClient) => {
   console.log(`Successfully logged in as ${readyClient.user.tag}!`);
 });
 
-// command handler
-function isKnownChatCommand(
-  i: Interaction,
-  cmds: CommandsMap
-): i is ChatInputCommandInteraction & { commandName: CommandName } {
-  return i.isChatInputCommand() && i.commandName in cmds;
-}
+const commands = await initCommands(Config);
+client.on(Events.InteractionCreate, (interaction) =>
+  commandHandler(interaction, commands)
+);
 
-function getMemberNickname(member: GuildMember) {
-  return member.nickname ? `(${member.nickname})` : "";
-}
+client.on(Events.MessageCreate, (msg) => messageHandler(msg, Config));
 
-client.on(Events.InteractionCreate, async (interaction) => {
-  if (!isKnownChatCommand(interaction, commands)) return;
-
-  console.log(
-    `\n➡️   Command [${interaction.commandName}] called by user ${
-      interaction.user.username
-    } | ${interaction.user.id} ${
-      interaction.inCachedGuild() ? getMemberNickname(interaction.member) : null
-    }`
-  );
-
-  await commands[interaction.commandName].execute(interaction);
-});
-
-// message handler
-client.on(Events.MessageCreate, async (msg) => {
-  if (
-    msg.guildId != Config.targetGuildId ||
-    msg.channelId != Config.targetChannelId ||
-    msg.type != MessageType.UserJoin
-  )
-    return;
-
-  msg.react("✅");
-  msg.react("❌");
-});
-
-// reactions handler
-client.on(Events.MessageReactionAdd, async (reaction) => {
-  if (reaction.partial) {
-    try {
-      await reaction.fetch();
-    } catch (e) {
-      console.error(e);
-      return;
-    }
-  }
-
-  if (
-    reaction.message.guildId != Config.targetGuildId ||
-    reaction.message.channelId != Config.targetChannelId ||
-    reaction.message.type != MessageType.UserJoin
-  )
-    return;
-  const emojiName = reaction.emoji.name;
-  const cache = reaction.message.reactions.cache;
-  const memberId = reaction.message.author?.id;
-  if (!memberId) return;
-  const member = await reaction.message.guild?.members.fetch(memberId);
-
-  if (cache.has("🎉") || cache.has("👋")) return;
-  if ((emojiName == "❌" || emojiName == "✅") && cache.has(emojiName)) {
-    const count = cache.get(emojiName)?.count ?? 0;
-    if (count - 1 >= Config.actionThreshold) {
-      if (emojiName == "❌") {
-        reaction.message.react("👋");
-        if (member?.bannable) member.ban({ reason: "Rejected by bot." });
-      } else {
-        reaction.message.react("🎉");
-        try {
-          member?.roles.add(Config.memberRoleId);
-        } catch (e) {
-          console.error(e);
-        }
-      }
-      return;
-    }
-  }
-});
+client.on(Events.MessageReactionAdd, (reaction, user) =>
+  reactionHandler(reaction, user, Config)
+);
 
 client.login(Config.token);
