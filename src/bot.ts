@@ -1,9 +1,9 @@
 import { Partials } from "discord.js";
 import { Client, Events, GatewayIntentBits } from "discord.js";
 import { Config } from "@config";
-import { commandHandler, initCommands } from "@handlers/command-handler";
-import { messageHandler } from "@handlers/message-handler";
-import { reactionHandler } from "@handlers/reaction-handler";
+import { commandHandler, initCommands } from "@handlers/command-handler.js";
+import { messageHandler } from "@handlers/message-handler.js";
+import { reactionHandler } from "@handlers/reaction-handler.js";
 
 Config.load();
 

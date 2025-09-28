@@ -25,7 +25,7 @@ export type Config = {
   targetGuildId: string;
   targetChannelId: string;
   memberRoleId: string;
-}
+};
 
 export const Config = {
   load() {

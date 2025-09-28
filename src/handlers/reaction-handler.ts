@@ -1,4 +1,4 @@
-import { Config } from "@/config";
+import { Config as ConfigType } from "@config";
 import {
   DiscordAPIError,
   MessageReaction,
@@ -11,7 +11,7 @@ import {
 export async function reactionHandler(
   reaction: MessageReaction | PartialMessageReaction,
   author: User | PartialUser,
-  config: Config
+  config: ConfigType
 ) {
   if (reaction.partial) {
     try {
