@@ -36,19 +36,19 @@ export async function reactionHandler(
   if ((emojiName == "❌" || emojiName == "✅") && cache.has(emojiName)) {
     const count = cache.get(emojiName)?.count ?? 0;
     if (count - 1 >= config.actionThreshold) {
-      if (emojiName == "❌") {
-        await reaction.message.react("👋");
-        if (member?.bannable) member.ban({ reason: "Rejected by bot." });
-      } else {
-        await reaction.message.react("🎉");
-        try {
+      try {
+        if (emojiName == "❌") {
+          if (member?.bannable) member.ban({ reason: "Rejected by bot." });
+          await reaction.message.react("👋");
+        } else {
           if (!member) return;
           await member.roles.add(config.memberRoleId);
-        } catch (e) {
-          console.error(e);
+          await reaction.message.react("🎉");
         }
+        return;
+      } catch (e) {
+        console.error(e);
       }
-      return;
     }
   }
 }
