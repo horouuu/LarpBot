@@ -4,10 +4,13 @@ import {
   MessageReaction,
   MessageType,
   PartialMessageReaction,
+  PartialUser,
+  User,
 } from "discord.js";
 
 export async function reactionHandler(
   reaction: MessageReaction | PartialMessageReaction,
+  author: User | PartialUser,
   config: Config
 ) {
   if (reaction.partial) {
@@ -28,14 +31,16 @@ export async function reactionHandler(
   // check cache for "done" markers first
   const emojiName = reaction.emoji.name;
   const cache = reaction.message.reactions.cache;
+
   if (cache.has("🎉") || cache.has("👋")) return;
 
   const memberId = reaction.message.author?.id;
   if (!memberId) return;
   const member = await reaction.message.guild?.members.fetch(memberId);
 
-  if ((emojiName == "❌" || emojiName == "✅") && cache.has(emojiName)) {
-    const count = cache.get(emojiName)?.count ?? 0;
+  if (emojiName == "❌" || emojiName == "✅") {
+    let count = reaction.count;
+    if (reaction.users.cache.has(memberId) || author.id == memberId) count -= 1;
     if (count - 1 >= config.actionThreshold) {
       try {
         if (emojiName == "❌") {
