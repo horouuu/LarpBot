@@ -40,7 +40,8 @@ export async function reactionHandler(
       } else {
         await reaction.message.react("🎉");
         try {
-          await member?.roles.add(config.memberRoleId);
+          if (!member) return;
+          await member.roles.add(config.memberRoleId);
         } catch (e) {
           console.error(e);
         }
