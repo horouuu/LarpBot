@@ -1,6 +1,6 @@
 import type { Config as ConfigType } from "@config";
 import { CommandName } from "@/types/generated/commands";
-import { CommandsMap, loadCommands } from "@commands";
+import { CommandsMap, loadCommands } from "@commands/index.js";
 import {
   Interaction,
   ChatInputCommandInteraction,
