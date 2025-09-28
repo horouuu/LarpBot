@@ -24,13 +24,15 @@ export async function reactionHandler(
     reaction.message.type != MessageType.UserJoin
   )
     return;
+  // check cache for "done" markers first
   const emojiName = reaction.emoji.name;
   const cache = reaction.message.reactions.cache;
+  if (cache.has("🎉") || cache.has("👋")) return;
+
   const memberId = reaction.message.author?.id;
   if (!memberId) return;
   const member = await reaction.message.guild?.members.fetch(memberId);
 
-  if (cache.has("🎉") || cache.has("👋")) return;
   if ((emojiName == "❌" || emojiName == "✅") && cache.has(emojiName)) {
     const count = cache.get(emojiName)?.count ?? 0;
     if (count - 1 >= config.actionThreshold) {
