@@ -203,7 +203,6 @@ const votekick = {
         }
       });
     } catch (e) {
-      console.error(e);
       let errMsg =
         "Something went wrong in the background. Contact the developers for help.";
 
@@ -218,6 +217,8 @@ const votekick = {
           case RESTJSONErrorCodes.UnknownMessage:
             console.warn("Message deleted.");
             return;
+          default:
+            console.error(e);
         }
       }
 
