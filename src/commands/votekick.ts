@@ -76,7 +76,7 @@ function collectHandler(
   printStatus(target, user, total, type);
 
   // check votes
-  if (reaction.count >= 1) {
+  if (total >= 1) {
     if (reaction.emoji.name === EMOJI_AYE) {
       kickMember(response.resource.message, target, member, total);
     } else if (reaction.emoji.name === EMOJI_NAY) {
