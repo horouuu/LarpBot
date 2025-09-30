@@ -4,10 +4,24 @@ import {
   ApplicationCommandOptionType,
   MessageReaction,
   User,
-  ReadonlyCollection,
-  Snowflake,
 } from "discord.js";
 import { Command } from "@types-local/commands";
+
+type VoteEmojiType = "❌" | "✅";
+const EMOJI_AYE: VoteEmojiType = "✅";
+const EMOJI_NAY: VoteEmojiType = "❌";
+
+function printStatus(
+  target: User,
+  user: User,
+  total: number,
+  type: VoteEmojiType
+) {}
+
+function isVoteEmoji(str: any): str is VoteEmojiType {
+  return str === EMOJI_AYE || str === EMOJI_NAY;
+}
+
 const votekick = {
   name: "votekick",
   description:
@@ -34,11 +48,12 @@ const votekick = {
         withResponse: true,
       });
 
-      await response.resource.message.react("✅");
-      await response.resource.message.react("❌");
+      await response.resource.message.react(EMOJI_AYE);
+      await response.resource.message.react(EMOJI_NAY);
 
-      const filter = (reaction: MessageReaction, user: User) =>
-        ["✅", "❌"].includes(reaction.emoji.name) && !user.bot;
+      const filter = (reaction: MessageReaction) => {
+        if (!isVoteEmoji(reaction.emoji.name)) return false;
+      };
 
       const reactionCollector =
         response.resource.message.createReactionCollector({
