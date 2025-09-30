@@ -8,6 +8,8 @@ import {
   InteractionCallbackResponse,
   Message,
   ReactionCollector,
+  DiscordAPIError,
+  RESTJSONErrorCodes,
 } from "discord.js";
 import { Command } from "@types-local/commands";
 
@@ -118,30 +120,30 @@ const votekick = {
   ],
   execute: async (interaction: Interaction<CacheType>) => {
     if (!interaction.isChatInputCommand()) return;
+    const response = await interaction.deferReply({ withResponse: true });
 
     try {
       // input check
       const target = interaction.options.getUser("target");
       if (!target) {
-        await interaction.reply("Missing input: target.");
+        await interaction.editReply("Missing input: target.");
         return;
       }
 
       // member check
       const member = await interaction.guild.members.fetch(target.id);
       if (!member) {
-        await interaction.reply("Member no longer in server.");
+        await interaction.editReply("Member no longer in server.");
         return;
       } else if (!member.kickable) {
-        await interaction.reply(
+        await interaction.editReply(
           "I don't have the permissions to kick that user!"
         );
         return;
       }
 
-      const response = await interaction.reply({
+      await interaction.editReply({
         content: `Vote to kick member: ${target}?`,
-        withResponse: true,
       });
 
       await response.resource.message.react(EMOJI_AYE);
@@ -181,11 +183,32 @@ const votekick = {
       });
     } catch (e) {
       console.error(e);
-      interaction
-        .followUp(
-          "Something went wrong in the background. Contact the developers for help."
-        )
-        .catch((e) => console.error(e));
+      let errMsg =
+        "Something went wrong in the background. Contact the developers for help.";
+
+      if (e instanceof DiscordAPIError) {
+        switch (e.code) {
+          case RESTJSONErrorCodes.UnknownMember:
+            errMsg = "That member isn't in the server!";
+            break;
+          case RESTJSONErrorCodes.UnknownInteraction:
+            console.warn("Interaction expired.");
+            return;
+          case RESTJSONErrorCodes.UnknownMessage:
+            console.warn("Message deleted.");
+            return;
+        }
+      }
+
+      try {
+        if (interaction.replied || interaction.deferred) {
+          await interaction.followUp(errMsg).catch((e) => console.error(e));
+        } else if (interaction.isRepliable()) {
+          await interaction.reply(errMsg).catch((e) => console.error(e));
+        }
+      } catch (e) {
+        console.error(e);
+      }
     }
   },
 } satisfies Command;
