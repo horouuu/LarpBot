@@ -51,9 +51,8 @@ const votekick = {
       await response.resource.message.react(EMOJI_AYE);
       await response.resource.message.react(EMOJI_NAY);
 
-      const filter = (reaction: MessageReaction) => {
-        if (!isVoteEmoji(reaction.emoji.name)) return false;
-      };
+      const filter = (reaction: MessageReaction, user: User) =>
+        isVoteEmoji(reaction.emoji.name) && !user.bot;
 
       const reactionCollector =
         response.resource.message.createReactionCollector({
