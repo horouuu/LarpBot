@@ -32,6 +32,7 @@ export async function reactionHandler(
   const emojiName = reaction.emoji.name;
   const cache = reaction.message.reactions.cache;
 
+  if (reaction.message.author.id === reaction.client.user.id) return;
   if (cache.has("🎉") || cache.has("👋")) return;
 
   const memberId = reaction.message.author?.id;
