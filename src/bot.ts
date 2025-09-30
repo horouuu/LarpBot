@@ -26,7 +26,7 @@ client.on(Events.ClientReady, async (readyClient) => {
 
 const commands = await initCommands(Config);
 client.on(Events.InteractionCreate, (interaction) =>
-  commandHandler(interaction, commands)
+  commandHandler(interaction, commands, Config)
 );
 
 client.on(Events.MessageCreate, (msg) => messageHandler(msg, Config));

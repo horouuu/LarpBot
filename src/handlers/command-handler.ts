@@ -30,7 +30,8 @@ export async function initCommands(config: ConfigType) {
 
 export async function commandHandler(
   interaction: Interaction,
-  commands: CommandsMap
+  commands: CommandsMap,
+  config: ConfigType
 ) {
   if (!isKnownChatCommand(interaction, commands)) return;
 
@@ -43,7 +44,7 @@ export async function commandHandler(
   );
 
   try {
-    await commands[interaction.commandName].execute(interaction);
+    await commands[interaction.commandName].execute(interaction, config);
   } catch (e) {
     console.error(e);
 
