@@ -95,12 +95,6 @@ const votekick = {
         }
       );
 
-      reactionCollector.on("dispose", (_, user: User) => {
-        console.log(
-          `Vote against ${target.username} forcibly ended by moderator: ${user.username} (${user.id}).`
-        );
-      });
-
       reactionCollector.on("end", () => {
         response.resource.message
           .reply(`Vote on member ${target} expired.`)
