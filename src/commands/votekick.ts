@@ -12,10 +12,21 @@ import {
   RESTJSONErrorCodes,
 } from "discord.js";
 import { Command } from "@types-local/commands";
+import { Config } from "@config";
 
 type VoteEmojiType = "❌" | "✅";
 const EMOJI_AYE: VoteEmojiType = "✅";
 const EMOJI_NAY: VoteEmojiType = "❌";
+
+type VoteContext = {
+  reaction: MessageReaction;
+  user: User;
+  member: GuildMember;
+  target: User;
+  config: Config;
+  response: InteractionCallbackResponse;
+  reactionCollector: ReactionCollector;
+};
 
 function printStatus(
   target: User,
@@ -64,21 +75,25 @@ async function kickMember(
   }
 }
 
-function collectHandler(
-  reaction: MessageReaction,
-  user: User,
-  member: GuildMember,
-  target: User,
-  response: InteractionCallbackResponse,
-  reactionCollector: ReactionCollector
-): Promise<void> {
+function collectHandler(voteCtx: VoteContext): Promise<void> {
+  const {
+    reaction,
+    user,
+    member,
+    target,
+    config,
+    response,
+    reactionCollector,
+  } = voteCtx;
+  const actionThreshold = config.actionThreshold;
+
   if (!isVoteEmoji(reaction.emoji.name)) return;
   const type: VoteEmojiType = reaction.emoji.name;
   const total = getVoteTotal(reaction, target);
   printStatus(target, user, total, type);
 
   // check votes
-  if (total >= 1) {
+  if (total >= actionThreshold) {
     if (reaction.emoji.name === EMOJI_AYE) {
       kickMember(response.resource.message, target, member, total);
     } else if (reaction.emoji.name === EMOJI_NAY) {
@@ -95,11 +110,8 @@ function collectHandler(
   }
 }
 
-function removeHandler(
-  reaction: MessageReaction,
-  user: User,
-  target: User
-): void {
+function removeHandler(voteCtx: VoteContext): void {
+  const { reaction, user, target } = voteCtx;
   if (!isVoteEmoji(reaction.emoji.name)) return;
   const type: VoteEmojiType = reaction.emoji.name;
   const total = getVoteTotal(reaction, target);
@@ -118,7 +130,7 @@ const votekick = {
       required: true,
     },
   ],
-  execute: async (interaction: Interaction<CacheType>) => {
+  execute: async (interaction: Interaction<CacheType>, config: Config) => {
     if (!interaction.isChatInputCommand()) return;
     const response = await interaction.deferReply({ withResponse: true });
 
@@ -159,19 +171,28 @@ const votekick = {
           dispose: true,
         });
 
-      reactionCollector.on("collect", (reaction: MessageReaction, user: User) =>
-        collectHandler(
-          reaction,
-          user,
-          member,
-          target,
-          response,
-          reactionCollector
-        )
+      const voteCtxBase = {
+        member,
+        target,
+        config,
+        response,
+        reactionCollector,
+      };
+
+      reactionCollector.on(
+        "collect",
+        (reaction: MessageReaction, user: User) => {
+          const voteCtx: VoteContext = { reaction, user, ...voteCtxBase };
+          collectHandler(voteCtx);
+        }
       );
 
-      reactionCollector.on("remove", (reaction: MessageReaction, user: User) =>
-        removeHandler(reaction, user, target)
+      reactionCollector.on(
+        "remove",
+        (reaction: MessageReaction, user: User) => {
+          const voteCtx: VoteContext = { reaction, user, ...voteCtxBase };
+          removeHandler(voteCtx);
+        }
       );
 
       reactionCollector.on("end", (_, reason: string) => {
