@@ -15,8 +15,22 @@ function printStatus(
   target: User,
   user: User,
   total: number,
-  type: VoteEmojiType
-) {}
+  type: VoteEmojiType,
+  removed: boolean = false
+): void {
+  console.log(
+    `Vote against ${target.username} | ${type}: ${total} (${
+      target.id === user.id ? "<>" : user.bot ? "!!" : removed ? "-" : "+"
+    } ${user.username})`
+  );
+}
+
+function getVoteTotal(reaction: MessageReaction, target: User): number {
+  const targetInVote = reaction.users.cache.has(target.id) ? 1 : 0;
+  const botsInVote = reaction.users.cache.filter((user: User) => user.bot).size;
+  const total = reaction.count - targetInVote - botsInVote; // deduct all bots and target's votes
+  return total;
+}
 
 function isVoteEmoji(str: any): str is VoteEmojiType {
   return str === EMOJI_AYE || str === EMOJI_NAY;
@@ -58,27 +72,39 @@ const votekick = {
         response.resource.message.createReactionCollector({
           filter: filter,
           time: 30000,
+          dispose: true,
         });
 
       reactionCollector.on(
         "collect",
         (reaction: MessageReaction, user: User) => {
-          const targetInVote = reaction.users.cache.has(target.id) ? 1 : 0;
-          const botsInVote = reaction.users.cache.filter(
-            (user: User) => user.bot
-          ).size;
-          const total = reaction.count - targetInVote - botsInVote; // deduct all bots and target's votes
-          const type = reaction.emoji.name;
-          console.log(
-            `Vote against ${target.username} | ${type}: ${total} (${
-              target.id === user.id ? "<>" : user.bot ? "!!" : "+"
-            } ${user.username})`
-          );
+          if (!isVoteEmoji(reaction.emoji.name)) return;
+          const type: VoteEmojiType = reaction.emoji.name;
+          const total = getVoteTotal(reaction, target);
+          printStatus(target, user, total, type);
         }
       );
 
+      reactionCollector.on(
+        "remove",
+        (reaction: MessageReaction, user: User) => {
+          if (!isVoteEmoji(reaction.emoji.name)) return;
+          const type: VoteEmojiType = reaction.emoji.name;
+          const total = getVoteTotal(reaction, target);
+          printStatus(target, user, total, type, true);
+        }
+      );
+
+      reactionCollector.on("dispose", (_, user: User) => {
+        console.log(
+          `Vote against ${target.username} forcibly ended by moderator: ${user.username} (${user.id}).`
+        );
+      });
+
       reactionCollector.on("end", () => {
-        response.resource.message.reply(`Vote on member ${target} expired.`);
+        response.resource.message
+          .reply(`Vote on member ${target} expired.`)
+          .catch((e) => console.error(e));
       });
     } catch (e) {
       console.error(e);
