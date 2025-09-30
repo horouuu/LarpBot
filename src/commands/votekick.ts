@@ -65,10 +65,15 @@ const votekick = {
         "collect",
         (reaction: MessageReaction, user: User) => {
           const targetInVote = reaction.users.cache.has(target.id) ? 1 : 0;
-          const total = reaction.count - 1 - targetInVote; // deduct bot and target's votes
+          const botsInVote = reaction.users.cache.filter(
+            (user: User) => user.bot
+          ).size;
+          const total = reaction.count - targetInVote - botsInVote; // deduct all bots and target's votes
           const type = reaction.emoji.name;
           console.log(
-            `Vote against ${target} | ${type}: ${total} (+ ${user.username})`
+            `Vote against ${target.username} | ${type}: ${total} (${
+              target.id === user.id ? "<>" : user.bot ? "!!" : "+"
+            } ${user.username})`
           );
         }
       );
