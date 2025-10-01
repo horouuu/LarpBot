@@ -17,3 +17,6 @@ Get-Content $Path | ForEach-Object {
   Remove-Item -Path Env:$name
   Write-Output "Cleared $name"
 }
+
+Remove-Item -Path Env:NODE_ENV
+Write-Output "Cleared NODE_ENV"

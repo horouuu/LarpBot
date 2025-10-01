@@ -19,3 +19,5 @@ Get-Content $Path | ForEach-Object {
   Set-Item -Path Env:$name -Value $value
   Write-Output "Set $name"
 }
+
+Set-Item -Path Env:NODE_ENV -Value production
