@@ -10,6 +10,7 @@ import {
   ReactionCollector,
   DiscordAPIError,
   RESTJSONErrorCodes,
+  ChatInputCommandInteraction,
 } from "discord.js";
 import { Command } from "@types-local/commands";
 import { Config } from "@config";
@@ -26,6 +27,7 @@ type VoteContext = {
   config: Config;
   response: InteractionCallbackResponse;
   reactionCollector: ReactionCollector;
+  interaction?: ChatInputCommandInteraction<CacheType>;
 };
 
 function printStatus(
@@ -57,7 +59,8 @@ async function kickMember(
   message: Message,
   user: User,
   member: GuildMember,
-  total: number
+  total: number,
+  interaction: ChatInputCommandInteraction<CacheType>
 ): Promise<void> {
   try {
     if (member.kickable) {
@@ -67,6 +70,13 @@ async function kickMember(
           member.nickname ? `(${member.nickname})` : `(${member.displayName})`
         } from guild ${member.guild.name} (${member.guild.id})`
       );
+
+      const msg = `Vote to kick ${user} passed with ${total} user(s) for the motion.`;
+      if (interaction.deferred) {
+        await interaction.editReply(msg);
+      } else if (interaction.isRepliable()) {
+        await interaction.reply(msg);
+      }
     } else {
       await message.reply("I don't have the permissions to kick that user!");
     }
@@ -84,6 +94,7 @@ function collectHandler(voteCtx: VoteContext): Promise<void> {
     config,
     response,
     reactionCollector,
+    interaction,
   } = voteCtx;
   const actionThreshold = config.actionThreshold;
 
@@ -95,15 +106,17 @@ function collectHandler(voteCtx: VoteContext): Promise<void> {
   // check votes
   if (total >= actionThreshold) {
     if (reaction.emoji.name === EMOJI_AYE) {
-      kickMember(response.resource.message, target, member, total);
+      kickMember(response.resource.message, target, member, total, interaction);
     } else if (reaction.emoji.name === EMOJI_NAY) {
       console.log(
         `Vote against member ${target.username} | ${member.id} ${
           member.nickname ? `(${member.nickname})` : `(${member.displayName})`
         } failed in guild ${member.guild.name} (${member.guild.id})`
       );
-      response.resource.message
-        .reply(`Vote failed with ${total} user(s) against the motion.`)
+      interaction
+        .editReply(
+          `Vote to kick ${target} failed with ${total} user(s) against the motion.`
+        )
         .catch((e) => console.error(e));
     }
     reactionCollector.stop();
@@ -182,7 +195,12 @@ const votekick = {
       reactionCollector.on(
         "collect",
         (reaction: MessageReaction, user: User) => {
-          const voteCtx: VoteContext = { reaction, user, ...voteCtxBase };
+          const voteCtx: VoteContext = {
+            reaction,
+            user,
+            interaction,
+            ...voteCtxBase,
+          };
           collectHandler(voteCtx);
         }
       );
