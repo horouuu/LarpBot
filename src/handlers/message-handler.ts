@@ -1,7 +1,9 @@
-import type { ConfigType as ConfigType } from "@config";
+import { HandlerContext } from "@types-local/global";
 import { Message, MessageType } from "discord.js";
 
-export async function messageHandler(msg: Message, config: ConfigType) {
+export async function messageHandler(msg: Message, handlerCtx: HandlerContext) {
+  const { config } = handlerCtx;
+  
   if (
     msg.guildId != config.targetGuildId ||
     msg.channelId != config.targetChannelId ||

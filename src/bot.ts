@@ -4,8 +4,12 @@ import { Config } from "@config";
 import { commandHandler, initCommands } from "@handlers/command-handler.js";
 import { messageHandler } from "@handlers/message-handler.js";
 import { reactionHandler } from "@handlers/reaction-handler.js";
+import { RedisStorage } from "./storage/RedisStorage";
+import { HandlerContext } from "./types/global";
 
 const config = new Config();
+const storage = await RedisStorage.create(config);
+const handlerCtx: HandlerContext = { config, storage };
 
 const client = new Client({
   intents: [
@@ -29,10 +33,10 @@ client.on(Events.InteractionCreate, (interaction) =>
   commandHandler(interaction, commands, config)
 );
 
-client.on(Events.MessageCreate, (msg) => messageHandler(msg, config));
+client.on(Events.MessageCreate, (msg) => messageHandler(msg, handlerCtx));
 
 client.on(Events.MessageReactionAdd, (reaction, user) =>
-  reactionHandler(reaction, user, config)
+  reactionHandler(reaction, user, handlerCtx)
 );
 
 client.login(config.token);

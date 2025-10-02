@@ -1,4 +1,4 @@
-import { ConfigType as ConfigType } from "@config";
+import { HandlerContext } from "@types-local/global";
 import {
   DiscordAPIError,
   MessageReaction,
@@ -11,7 +11,7 @@ import {
 export async function reactionHandler(
   reaction: MessageReaction | PartialMessageReaction,
   author: User | PartialUser,
-  config: ConfigType
+  handlerCtx: HandlerContext
 ) {
   if (reaction.partial) {
     try {
@@ -21,6 +21,8 @@ export async function reactionHandler(
       return;
     }
   }
+
+  const { config } = handlerCtx;
 
   if (
     reaction.message.guildId != config.targetGuildId ||
@@ -41,6 +43,7 @@ export async function reactionHandler(
 
   if (emojiName == "❌" || emojiName == "✅") {
     let count = reaction.count;
+    if (!count) return;
     if (reaction.users.cache.has(memberId) || author.id == memberId) count -= 1;
     if (count - 1 >= config.actionThreshold) {
       try {
