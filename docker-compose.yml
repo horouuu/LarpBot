@@ -13,8 +13,7 @@ services:
       TARGET_CHANNEL_ID: "${TARGET_CHANNEL_ID}"
       MEMBER_ROLE_ID: "${MEMBER_ROLE_ID}"
       ACTION_THRESHOLD: "${ACTION_THRESHOLD:-3}"
-      REDIS_USERNAME: "${REDIS_USERNAME:-default}"
-      REDIS_PASSWORD: "${REDIS_PASSWORD}"
+      REDIS_URL: "${REDIS_URL}"
 
   redis:
     image: redis:8.2.1

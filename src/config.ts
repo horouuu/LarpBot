@@ -24,12 +24,7 @@ const EnvSchema = z.object({
     .string()
     .min(1, `Missing MEMBER_ROLE_ID in ${variableStore}`),
   ACTION_THRESHOLD: z.coerce.number<number>().int().positive().default(3),
-  REDIS_USERNAME: z
-    .string()
-    .min(1, `Missing REDIS_USERNAME in ${variableStore}`),
-  REDIS_PASSWORD: z
-    .string()
-    .min(1, `Missing REDIS_PASSWORD in ${variableStore}`),
+  REDIS_URL: z.string().min(1, `Missing REDIS_URL in ${variableStore}`),
 });
 const configVars = [
   "TOKEN",
@@ -38,8 +33,7 @@ const configVars = [
   "TARGET_CHANNEL_ID",
   "MEMBER_ROLE_ID",
   "ACTION_THRESHOLD",
-  "REDIS_USERNAME",
-  "REDIS_PASSWORD",
+  "REDIS_URL",
 ] as const;
 
 type SnakeToCamel<S extends string> = S extends `${infer Head}_${infer Tail}`
