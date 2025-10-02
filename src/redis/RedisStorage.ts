@@ -1,8 +1,8 @@
 import { createClient, RedisClientType, RedisModules } from "redis";
-import { Config } from "@config";
+import { ConfigType } from "@config";
 
 type PersistedConfigs = {
-  actionThreshold?: Config["actionThreshold"];
+  actionThreshold?: ConfigType["actionThreshold"];
 };
 
 export class RedisStorage {
