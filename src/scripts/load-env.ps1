@@ -21,3 +21,4 @@ Get-Content $Path | ForEach-Object {
 }
 
 Set-Item -Path Env:NODE_ENV -Value production
+Write-Output "Set NODE_ENV to production"
