@@ -262,10 +262,14 @@ const votekick = {
       }
 
       try {
-        if (interaction.replied || interaction.deferred) {
-          await interaction.followUp(errMsg).catch((e) => console.error(e));
-        } else if (interaction.isRepliable()) {
-          await interaction.reply(errMsg).catch((e) => console.error(e));
+        if (interaction.isRepliable()) {
+          if (interaction.replied || interaction.deferred) {
+            await interaction.followUp(errMsg).catch((e) => console.error(e));
+          } else {
+            await interaction.reply(errMsg).catch((e) => console.error(e));
+          }
+        } else {
+          console.error("Couldn't forward request through interaction reply or follow up.")
         }
       } catch (e) {
         console.error(e);
