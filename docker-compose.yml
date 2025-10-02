@@ -12,3 +12,11 @@ services:
       TARGET_CHANNEL_ID: "${TARGET_CHANNEL_ID}"
       MEMBER_ROLE_ID: "${MEMBER_ROLE_ID}"
       ACTION_THRESHOLD: "${ACTION_THRESHOLD:-3}"
+
+  redis:
+    image: redis:8.2.1
+    container_name: larpbot-redis
+    restart: unless-stopped
+    environment:
+      REDIS_USERNAME: ${REDIS_USERNAME}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
