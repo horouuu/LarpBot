@@ -11,7 +11,6 @@
     "paths": {
       "@commands": ["commands"],
       "@commands/*": ["commands/*"],
-      "@/*": ["*"],
       "@types-local/*": ["types/*"],
       "@types-local/util": ["types/util.d.ts"],
       "@types-local/global": ["types/global.d.ts"],
@@ -19,7 +18,8 @@
       "@utils": ["utils/utils.ts"],
       "@handlers/*": ["handlers/*"],
       "@storage": ["storage/Storage.ts"],
-      "@redis-storage": ["storage/RedisStorage.ts"]
+      "@redis-storage": ["storage/RedisStorage.ts"],
+      "@/*": ["*"]
     }
   },
   "exclude": ["./node_modules", "src/scripts/update-types.ts"]
