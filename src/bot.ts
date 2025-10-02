@@ -30,7 +30,7 @@ client.on(Events.ClientReady, async (readyClient) => {
 
 const commands = await initCommands(config);
 client.on(Events.InteractionCreate, (interaction) =>
-  commandHandler(interaction, commands, config)
+  commandHandler(interaction, commands, handlerCtx)
 );
 
 client.on(Events.MessageCreate, (msg) => messageHandler(msg, handlerCtx));
