@@ -13,7 +13,7 @@ import {
   ChatInputCommandInteraction,
 } from "discord.js";
 import { Command } from "@types-local/commands";
-import { Config } from "@config";
+import { ConfigType } from "@config";
 
 type VoteEmojiType = "❌" | "✅";
 const EMOJI_AYE: VoteEmojiType = "✅";
@@ -24,7 +24,7 @@ type VoteContext = {
   user: User;
   member: GuildMember;
   target: User;
-  config: Config;
+  config: ConfigType;
   response: InteractionCallbackResponse;
   reactionCollector: ReactionCollector;
   interaction?: ChatInputCommandInteraction<CacheType>;
@@ -143,7 +143,7 @@ const votekick = {
       required: true,
     },
   ],
-  execute: async (interaction: Interaction<CacheType>, config: Config) => {
+  execute: async (interaction: Interaction<CacheType>, config: ConfigType) => {
     if (!interaction.isChatInputCommand()) return;
     const response = await interaction.deferReply({ withResponse: true });
 

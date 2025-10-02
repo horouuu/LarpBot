@@ -1,77 +1,91 @@
 import dotenv from "dotenv";
-
-let token: string;
-let appId: string;
-let targetGuildId: string;
-let targetChannelId: string;
-let memberRoleId: string;
-let actionThreshold: number;
-
+import { z } from "zod";
 let variableStore = "environment variables";
-
-function assertLoaded<T>(val: T | undefined, name: string) {
-  if (!val)
-    throw new Error(
-      `${name} accessed before loadConfig() is called. Use the function before using Config.`
-    );
-
-  return val;
+if (process.env.NODE_ENV !== "production") {
+  variableStore = ".env";
+  dotenv.config();
 }
 
-export type Config = {
-  actionThreshold: number;
-  token: string;
-  appId: string;
-  targetGuildId: string;
-  targetChannelId: string;
-  memberRoleId: string;
+if (!process.env.ACTION_THRESHOLD)
+  console.warn(
+    `ACTION_THRESHOLD not defined in ${variableStore}. Using default value of 3.`
+  );
+
+const EnvSchema = z.object({
+  TOKEN: z.string().min(1, `Missing TOKEN value in ${variableStore}`),
+  APP_ID: z.string().min(1, `Missing APP_ID value in ${variableStore}`),
+  TARGET_GUILD_ID: z
+    .string()
+    .min(1, `Missing TARGET_GUILD_ID in ${variableStore}`),
+  TARGET_CHANNEL_ID: z
+    .string()
+    .min(1, `Missing TARGET_CHANNEL_ID in ${variableStore}`),
+  MEMBER_ROLE_ID: z
+    .string()
+    .min(1, `Missing MEMBER_ROLE_ID in ${variableStore}`),
+  ACTION_THRESHOLD: z.coerce.number<number>().int().positive().default(3),
+  REDIS_USERNAME: z
+    .string()
+    .min(1, `Missing REDIS_USERNAME in ${variableStore}`),
+  REDIS_PASSWORD: z
+    .string()
+    .min(1, `Missing REDIS_PASSWORD in ${variableStore}`),
+});
+const configVars = [
+  "TOKEN",
+  "APP_ID",
+  "TARGET_GUILD_ID",
+  "TARGET_CHANNEL_ID",
+  "MEMBER_ROLE_ID",
+  "ACTION_THRESHOLD",
+  "REDIS_USERNAME",
+  "REDIS_PASSWORD",
+] as const;
+
+type SnakeToCamel<S extends string> = S extends `${infer Head}_${infer Tail}`
+  ? `${Lowercase<Head>}${Capitalize<SnakeToCamel<Tail>>}`
+  : `${Lowercase<S>}`;
+
+type Env = z.infer<typeof EnvSchema>;
+type EnvAccessors = {
+  [K in keyof Env as SnakeToCamel<K & string>]: Env[K];
 };
 
-export const Config = {
-  load() {
-    if (process.env.NODE_ENV !== "production") {
-      dotenv.config();
-      variableStore = ".env";
+function snakeToCamel<T extends string>(str: T): SnakeToCamel<T> {
+  return str
+    .split("_")
+    .map((s, i) =>
+      i == 0
+        ? s.toLowerCase()
+        : s.charAt(0).toUpperCase() + s.slice(1).toLowerCase()
+    )
+    .join("") as SnakeToCamel<T>;
+}
+
+export type ConfigType = EnvAccessors;
+export class Config {
+  private _env: Env;
+
+  constructor() {
+    try {
+      const parsed = EnvSchema.parse(process.env);
+      this._env = parsed;
+    } catch (e) {
+      console.error(e);
+      throw new Error("Parsing process.env with EnvSchema failed.");
     }
 
-    if (!process.env.ACTION_THRESHOLD)
-      console.warn(
-        `ACTION_THRESHOLD not defined in ${variableStore}. Using default value of 3.`
-      );
-    actionThreshold = Number(process.env.ACTION_THRESHOLD ?? "3");
+    for (const k of configVars) {
+      Object.defineProperty(this, snakeToCamel(k), {
+        get: () => this._env[k],
+        enumerable: true,
+        configurable: false,
+      });
+    }
+  }
+}
 
-    if (!process.env.TOKEN)
-      throw new Error(`Missing TOKEN value in ${variableStore}.`);
-    if (!process.env.APP_ID)
-      throw new Error(`Missing APP_ID value in ${variableStore}.`);
-    if (!process.env.TARGET_GUILD_ID)
-      throw new Error(`Missing TARGET_GUILD_ID value in ${variableStore}.`);
-    if (!process.env.TARGET_CHANNEL_ID)
-      throw new Error(`Missing TARGET_CHANNEL_ID value in ${variableStore}`);
-    if (!process.env.MEMBER_ROLE_ID)
-      throw new Error(`Missing MEMBER_ROLE_ID value in ${variableStore}`);
-    token = process.env.TOKEN;
-    appId = process.env.APP_ID;
-    targetGuildId = process.env.TARGET_GUILD_ID;
-    targetChannelId = process.env.TARGET_CHANNEL_ID;
-    memberRoleId = process.env.MEMBER_ROLE_ID;
-  },
-  get actionThreshold() {
-    return assertLoaded<number>(actionThreshold, "ACTION_THRESHOLD");
-  },
-  get token() {
-    return assertLoaded<string>(token, "TOKEN");
-  },
-  get appId() {
-    return assertLoaded<string>(appId, "APP_ID");
-  },
-  get targetGuildId() {
-    return assertLoaded<string>(targetGuildId, "TARGET_GUILD_ID");
-  },
-  get targetChannelId() {
-    return assertLoaded<string>(targetChannelId, "TARGET_CHANNEL_ID");
-  },
-  get memberRoleId() {
-    return assertLoaded<string>(memberRoleId, "MEMBER_ROLE_ID");
-  },
-} as const;
+export interface Config extends EnvAccessors {}
+
+const config = new Config();
+console.log(config.actionThreshold);

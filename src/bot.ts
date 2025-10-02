@@ -5,7 +5,7 @@ import { commandHandler, initCommands } from "@handlers/command-handler.js";
 import { messageHandler } from "@handlers/message-handler.js";
 import { reactionHandler } from "@handlers/reaction-handler.js";
 
-Config.load();
+const config = new Config();
 
 const client = new Client({
   intents: [
@@ -24,15 +24,15 @@ client.on(Events.ClientReady, async (readyClient) => {
   console.log(`Successfully logged in as ${readyClient.user.tag}!`);
 });
 
-const commands = await initCommands(Config);
+const commands = await initCommands(config);
 client.on(Events.InteractionCreate, (interaction) =>
-  commandHandler(interaction, commands, Config)
+  commandHandler(interaction, commands, config)
 );
 
-client.on(Events.MessageCreate, (msg) => messageHandler(msg, Config));
+client.on(Events.MessageCreate, (msg) => messageHandler(msg, config));
 
 client.on(Events.MessageReactionAdd, (reaction, user) =>
-  reactionHandler(reaction, user, Config)
+  reactionHandler(reaction, user, config)
 );
 
-client.login(Config.token);
+client.login(config.token);
