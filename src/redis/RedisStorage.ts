@@ -1,10 +1,37 @@
 import { createClient } from "redis";
 import { ConfigType } from "@config";
 
-type PersistedConfigs = Pick<ConfigType, "actionThreshold">;
-type AtLeastOne<T> = {
-  [K in keyof T]-?: Required<Pick<T, K>> & Omit<T, K>;
-}[keyof T];
+const REDIS_NAMESPACE_GUILDS = "guilds";
+const REDIS_NAMESPACE_CONFIGS = "configs";
+
+const persistedConfigs = ["actionThreshold", "targetGuildId"] as const;
+type PersistedKey = (typeof persistedConfigs)[number];
+type PersistedConfigs = Pick<ConfigType, PersistedKey>;
+
+type AtLeastOne<T, Keys extends keyof T = keyof T> = Omit<T, Keys> &
+  {
+    [K in Keys]-?: Required<Pick<T, K>> &
+      Partial<Record<Exclude<Keys, K>, undefined>>;
+  }[Keys];
+
+type OrNullEntries<T> = { [K in keyof T]: T[K] | null };
+type RetrievedEntry<K extends PersistedKey = PersistedKey> = readonly [
+  K,
+  OrNullEntries<PersistedConfigs>[K]
+];
+
+function decodeValueFromKey(
+  key: PersistedKey,
+  value: string
+): PersistedConfigs[typeof key] {
+  switch (key) {
+    case "actionThreshold":
+      return Number(value) as PersistedConfigs["actionThreshold"];
+    default:
+      return value as any;
+  }
+}
+
 export class RedisStorage {
   private client: ReturnType<typeof createClient>;
 
@@ -42,14 +69,45 @@ export class RedisStorage {
     }
   }
 
+  private async mGet(keys: string[]): Promise<string[]> {
+    try {
+      const res = (await this.client.mGet(keys)) as string[];
+      return res;
+    } catch (e) {
+      console.error(e);
+      throw new Error("Failed to mGet from database!");
+    }
+  }
   public async registerConfigs(
     guildId: string,
     configs: AtLeastOne<PersistedConfigs>
   ) {
     for (const [key, value] of Object.entries(configs)) {
-      const redisKey: string = `${guildId}:${key}`;
+      const redisKey: string = `${REDIS_NAMESPACE_GUILDS}:${guildId}:${REDIS_NAMESPACE_CONFIGS}:${key}`;
       await this.set(redisKey, value.toString());
     }
+  }
+
+  public async retrieveConfigs(
+    guildId: string
+  ): Promise<OrNullEntries<PersistedConfigs>> {
+    const keys = persistedConfigs.map(
+      (configPrefix) =>
+        `${REDIS_NAMESPACE_GUILDS}:${guildId}:${REDIS_NAMESPACE_CONFIGS}:${configPrefix}`
+    );
+
+    const retrieved = await this.mGet(keys);
+    const entries: RetrievedEntry[] = retrieved.flatMap(
+      (r, i): RetrievedEntry[] => {
+        const key = persistedConfigs[i];
+        if (!r) return [[key, null]];
+        const value = decodeValueFromKey(key, r);
+        return [[key, value]];
+      }
+    );
+
+    const out = Object.fromEntries(entries);
+    return out as OrNullEntries<PersistedConfigs>;
   }
 
   public async destroy(): Promise<void> {
