@@ -1,4 +1,4 @@
-import { Config as ConfigType } from "@config";
+import { ConfigType as ConfigType } from "@config";
 import {
   DiscordAPIError,
   MessageReaction,

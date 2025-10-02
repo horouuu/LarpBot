@@ -1,4 +1,4 @@
-import type { Config as ConfigType } from "@config";
+import type { ConfigType as ConfigType } from "@config";
 import { Message, MessageType } from "discord.js";
 
 export async function messageHandler(msg: Message, config: ConfigType) {

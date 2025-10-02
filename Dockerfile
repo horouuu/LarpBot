@@ -1,5 +1,5 @@
 # BUILD STAGE
-FROM node:24-alpine3.21 AS builder
+FROM node:slim AS builder
 
 WORKDIR /app
 
@@ -12,7 +12,7 @@ RUN npm run build
 
 
 # RUNTIME STAGE
-FROM node:24-alpine3.21 AS runner
+FROM node:slim AS runner
 
 WORKDIR /app
 ENV NODE_ENV=production
