@@ -1,0 +1,35 @@
+import { CommandContext } from "@/types/commands";
+
+type SnakeToCamel<S extends string> = S extends `${infer Head}_${infer Tail}`
+  ? `${Lowercase<Head>}${Capitalize<SnakeToCamel<Tail>>}`
+  : `${Lowercase<S>}`;
+
+function snakeToCamel<T extends string>(str: T): SnakeToCamel<T> {
+  return str
+    .split("_")
+    .map((s, i) =>
+      i == 0
+        ? s.toLowerCase()
+        : s.charAt(0).toUpperCase() + s.slice(1).toLowerCase()
+    )
+    .join("") as SnakeToCamel<T>;
+}
+
+async function catchAllInteractionReply(
+  interaction: CommandContext["interaction"]
+) {
+  let errMsg =
+    "Something went wrong in the background. Contact the developers for help.";
+  if (interaction.isRepliable()) {
+    if (interaction.replied || interaction.deferred) {
+      interaction.followUp(errMsg).catch((e) => console.error(e));
+    }
+  } else {
+    console.error(
+      "Couldn't forward error through interaction reply or follow up."
+    );
+  }
+}
+
+export type { SnakeToCamel };
+export { snakeToCamel, catchAllInteractionReply };

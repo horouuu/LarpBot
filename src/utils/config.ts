@@ -1,5 +1,6 @@
 import dotenv from "dotenv";
 import { z } from "zod";
+import { snakeToCamel, SnakeToCamel } from "@utils";
 let variableStore = "environment variables";
 if (process.env.NODE_ENV !== "production") {
   variableStore = ".env";
@@ -36,25 +37,10 @@ const configVars = [
   "REDIS_URL",
 ] as const;
 
-type SnakeToCamel<S extends string> = S extends `${infer Head}_${infer Tail}`
-  ? `${Lowercase<Head>}${Capitalize<SnakeToCamel<Tail>>}`
-  : `${Lowercase<S>}`;
-
 type Env = z.infer<typeof EnvSchema>;
 type EnvAccessors = {
   [K in keyof Env as SnakeToCamel<K & string>]: Env[K];
 };
-
-function snakeToCamel<T extends string>(str: T): SnakeToCamel<T> {
-  return str
-    .split("_")
-    .map((s, i) =>
-      i == 0
-        ? s.toLowerCase()
-        : s.charAt(0).toUpperCase() + s.slice(1).toLowerCase()
-    )
-    .join("") as SnakeToCamel<T>;
-}
 
 export type ConfigType = EnvAccessors;
 export class Config {
