@@ -4,21 +4,25 @@ import {
   CommandContext,
   CommandContextRequire,
 } from "@types-local/commands";
-import { Storage } from "@storage";
-import { catchAllInteractionReply } from "@/utils/utils";
+import { PersistedKey, Storage } from "@storage";
+import {
+  catchAllInteractionReply,
+  isPersistedKey,
+  snakeToCamel,
+} from "@/utils/utils";
 
 enum ConfigCommandOptions {
   VIEW = "view",
   SET = "set",
 }
 
-type ViewContext = {
+type ConfigCommandContext = {
   interaction: CommandContext["interaction"];
   guildId: string;
   storage: Storage;
 };
 
-async function handleView(viewCtx: ViewContext) {
+async function handleView(viewCtx: ConfigCommandContext) {
   const { interaction, guildId, storage } = viewCtx;
   const serverConfigs = await storage.retrieveConfigs(guildId);
   const configsText = Object.entries(serverConfigs)
@@ -26,6 +30,21 @@ async function handleView(viewCtx: ViewContext) {
     .join("\n");
   const viewReply = `## ${interaction.guild?.name}\n### Configuration Variables\n\`\`\`json\n${configsText}\`\`\``;
   await interaction.reply(viewReply);
+}
+
+async function handleSet(setCtx: ConfigCommandContext) {
+  const { interaction, guildId, storage } = setCtx;
+  const toSetKey = snakeToCamel(interaction.options.getSubcommand());
+  const toSetValue = interaction.options.getInteger("threshold");
+  if (!toSetValue) throw Error(`Missing value to set key ${toSetKey}`);
+  if (!isPersistedKey(toSetKey)) throw Error(`Invalid key to set: ${toSetKey}`);
+
+  await storage.registerConfigs(guildId, {
+    [toSetKey as PersistedKey]: toSetValue,
+  });
+  await interaction.reply(
+    `Successfully set ${toSetKey} to ${toSetValue} for server ${interaction.guild?.name}`
+  );
 }
 
 const config = {
@@ -65,18 +84,22 @@ const config = {
   ) => {
     const { interaction, config: botConfig, storage } = commandCtx;
     if (!interaction.isChatInputCommand()) return;
-    const subCommand = interaction.options.getSubcommand();
+    const choice =
+      interaction.options.getSubcommandGroup() ??
+      interaction.options.getSubcommand();
+
     const guildId = interaction.guildId;
     try {
       if (!guildId) throw new Error("Null guild ID on retrieve.");
-      switch (subCommand) {
+      switch (choice) {
         case ConfigCommandOptions.VIEW:
           await handleView({ interaction, guildId, storage });
           break;
         case ConfigCommandOptions.SET:
-          const setOption = interaction.options.getString("");
+          await handleSet({ interaction, guildId, storage });
+          break;
         default:
-          throw new Error("Unknown subcommand of config chosen.");
+          throw new Error("Unknown subcommand chosen.");
       }
     } catch (e) {
       catchAllInteractionReply(interaction);
