@@ -5,11 +5,7 @@ import {
   CommandContextRequire,
 } from "@types-local/commands";
 import { PersistedKey, Storage } from "@storage";
-import {
-  catchAllInteractionReply,
-  isPersistedKey,
-  snakeToCamel,
-} from "@/utils/utils";
+import { catchAllInteractionReply, isPersistedKey, snakeToCamel } from "@utils";
 
 enum ConfigCommandOptions {
   VIEW = "view",
