@@ -76,9 +76,9 @@ const config = {
     },
   ],
   execute: async (
-    commandCtx: CommandContextRequire<CommandContext, "config" | "storage">
+    commandCtx: CommandContextRequire<CommandContext, "storage">
   ) => {
-    const { interaction, config: botConfig, storage } = commandCtx;
+    const { interaction, storage } = commandCtx;
     if (!interaction.isChatInputCommand()) return;
     const choice =
       interaction.options.getSubcommandGroup() ??
