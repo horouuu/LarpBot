@@ -43,8 +43,8 @@ export class RedisStorage {
   }
 
   public async registerConfigs(
-    configs: AtLeastOne<PersistedConfigs>,
-    guildId: string
+    guildId: string,
+    configs: AtLeastOne<PersistedConfigs>
   ) {
     for (const [key, value] of Object.entries(configs)) {
       const redisKey: string = `${guildId}:${key}`;
