@@ -13,14 +13,17 @@ const extension: string = process.env.NODE_ENV !== "production" ? ".ts" : ".js";
 export async function loadCommands(): Promise<CommandsMap> {
   const currentPath = import.meta.dirname;
   const files = fs
-    .readdirSync(currentPath)
-    .filter((f) => f !== `index${extension}`)
-    .filter((f) => f.endsWith(extension));
+    .readdirSync(currentPath, { recursive: true, withFileTypes: true })
+    .filter((f) => f.isFile())
+    .filter((f) => f.name !== `index${extension}`)
+    .filter((f) => f.name.endsWith(extension));
 
   const commands = await Promise.all(
     files.map(async (f) => {
-      const mod = await import(pathToFileURL(path.join(currentPath, f)).href);
-      const cmdLabel = path.basename(f, path.extname(f));
+      const mod = await import(
+        pathToFileURL(path.join(currentPath, f.name)).href
+      );
+      const cmdLabel = path.basename(f.name, path.extname(f.name));
       const cmd: Command = mod[cmdLabel];
 
       if (!cmd) {

@@ -12,7 +12,11 @@ import {
   RESTJSONErrorCodes,
   ChatInputCommandInteraction,
 } from "discord.js";
-import { Command } from "@types-local/commands";
+import {
+  Command,
+  CommandContext,
+  CommandContextRequire,
+} from "@types-local/commands";
 import { ConfigType } from "@config";
 
 type VoteEmojiType = "❌" | "✅";
@@ -151,7 +155,10 @@ const votekick = {
       required: true,
     },
   ],
-  execute: async (interaction: Interaction<CacheType>, config?: ConfigType) => {
+  execute: async (
+    commandCtx: CommandContextRequire<CommandContext, "config">
+  ) => {
+    const { interaction, config } = commandCtx;
     if (!interaction.isChatInputCommand()) return;
     if (!config) throw new Error("Config missing for command: Votekick");
     const response = await interaction.deferReply({ withResponse: true });

@@ -8,6 +8,8 @@ import {
   REST,
   Routes,
 } from "discord.js";
+import { CommandContext } from "@types-local/commands";
+import { HandlerContext } from "@types-local/global";
 
 export async function initCommands(config: ConfigType) {
   const commands = await loadCommands();
@@ -31,9 +33,10 @@ export async function initCommands(config: ConfigType) {
 export async function commandHandler(
   interaction: Interaction,
   commands: CommandsMap,
-  config: ConfigType
+  handlerCtx: HandlerContext
 ) {
   if (!isKnownChatCommand(interaction, commands)) return;
+  const { config, storage } = handlerCtx;
 
   console.log(
     `\n➡️   Command [${interaction.commandName}] called by user ${
@@ -43,8 +46,14 @@ export async function commandHandler(
     }`
   );
 
+  const commandCtx: CommandContext = {
+    interaction: interaction,
+    config: config,
+    storage: storage,
+  };
+
   try {
-    await commands[interaction.commandName].execute(interaction, config);
+    await commands[interaction.commandName].execute(commandCtx);
   } catch (e) {
     console.error(e);
 

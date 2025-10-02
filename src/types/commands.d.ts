@@ -1,9 +1,26 @@
+import { Storage } from "@storage";
 import { ConfigType } from "@config";
-import { CacheType, Interaction, ApplicationCommandOption } from "discord.js";
+import {
+  CacheType,
+  ApplicationCommandOption,
+  ChatInputCommandInteraction,
+} from "discord.js";
+
+export type CommandContext = {
+  interaction: ChatInputCommandInteraction<CacheType>;
+  config?: ConfigType;
+  storage?: Storage;
+};
+
+export type CommandContextRequire<
+  Ctx extends CommandContext,
+  Keys extends keyof Ctx = never
+> = Omit<Ctx, Keys> & Required<Pick<Ctx, Keys>>;
 
 export interface Command {
   name: string;
   description: string;
   options?: ApplicationCommandOption[];
-  execute: (interaction: Interaction<CacheType>, config?: ConfigType) => any;
+  execute(commandCtx: CommandContextRequire<CommandContext>): Promise<void>;
+  execute(commandCtx: CommandContext): Promise<void>;
 }
