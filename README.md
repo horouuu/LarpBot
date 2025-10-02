@@ -1,4 +1,4 @@
-# LarpBot v1.1 (Redis)
+# LarpBot
 ## Usage
 1. Copy `.env.example`, fill it accordingly, and rename it to `.env`.
 2. Run `docker compose --build up -D`.
