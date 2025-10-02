@@ -1,7 +1,7 @@
 import { AtLeastOne, OrNullEntries } from "@/types/util";
 import { ConfigType } from "@config";
 
-const persistedConfigs = ["actionThreshold", "targetGuildId"] as const;
+const persistedConfigs = ["actionThreshold"] as const;
 type PersistedKey = (typeof persistedConfigs)[number];
 type PersistedConfigs = Pick<ConfigType, PersistedKey>;
 export abstract class Storage {
