@@ -4,10 +4,28 @@ import {
   CommandContext,
   CommandContextRequire,
 } from "@types-local/commands";
+import { Storage } from "@storage";
+import { catchAllInteractionReply } from "@/utils/utils";
 
 enum ConfigCommandOptions {
   VIEW = "view",
   SET = "set",
+}
+
+type ViewContext = {
+  interaction: CommandContext["interaction"];
+  guildId: string;
+  storage: Storage;
+};
+
+async function handleView(viewCtx: ViewContext) {
+  const { interaction, guildId, storage } = viewCtx;
+  const serverConfigs = await storage.retrieveConfigs(guildId);
+  const configsText = Object.entries(serverConfigs)
+    .map(([key, value]) => `${key}: ${value}`)
+    .join("\n");
+  const viewReply = `## ${interaction.guild?.name}\n### Configuration Variables\n\`\`\`json\n${configsText}\`\`\``;
+  await interaction.reply(viewReply);
 }
 
 const config = {
@@ -53,32 +71,15 @@ const config = {
       if (!guildId) throw new Error("Null guild ID on retrieve.");
       switch (subCommand) {
         case ConfigCommandOptions.VIEW:
-          const serverConfigs = await storage.retrieveConfigs(guildId);
-          const configsText = Object.entries(serverConfigs)
-            .map(([key, value]) => `${key}: ${value}`)
-            .join("\n");
-          const viewReply = `## ${interaction.guild?.name}\n### Configuration Variables\n\`\`\`json\n${configsText}\`\`\``;
-          await interaction.reply(viewReply);
+          await handleView({ interaction, guildId, storage });
           break;
         case ConfigCommandOptions.SET:
-          //set
-          break;
+          const setOption = interaction.options.getString("");
         default:
           throw new Error("Unknown subcommand of config chosen.");
       }
     } catch (e) {
-      let errMsg =
-        "Something went wrong in the background. Contact the developers for help.";
-      if (interaction.isRepliable()) {
-        if (interaction.replied || interaction.deferred) {
-          interaction.followUp(errMsg).catch((e) => console.error(e));
-        }
-      } else {
-        console.error(
-          "Couldn't forward error through interaction reply or follow up."
-        );
-      }
-
+      catchAllInteractionReply(interaction);
       console.error(`[config]: ${e}`);
     }
   },
