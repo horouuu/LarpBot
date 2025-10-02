@@ -43,7 +43,7 @@ async function handleSet(setCtx: ConfigCommandContext) {
     [toSetKey as PersistedKey]: toSetValue,
   });
   await interaction.reply(
-    `Successfully set ${toSetKey} to ${toSetValue} for server ${interaction.guild?.name}`
+    `Successfully set \`${toSetKey}\` to \`${toSetValue}\` for server **${interaction.guild?.name}**.`
   );
 }
 
