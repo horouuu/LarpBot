@@ -1,3 +1,4 @@
+import { persistedConfigs, PersistedKey } from "@/storage/Storage";
 import { CommandContext } from "@/types/commands";
 
 type SnakeToCamel<S extends string> = S extends `${infer Head}_${infer Tail}`
@@ -31,5 +32,9 @@ async function catchAllInteractionReply(
   }
 }
 
+function isPersistedKey(str: string): str is PersistedKey {
+  return (persistedConfigs as readonly string[]).includes(str);
+}
+
 export type { SnakeToCamel };
-export { snakeToCamel, catchAllInteractionReply };
+export { snakeToCamel, catchAllInteractionReply, isPersistedKey };
