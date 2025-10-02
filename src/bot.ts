@@ -4,8 +4,8 @@ import { Config } from "@config";
 import { commandHandler, initCommands } from "@handlers/command-handler.js";
 import { messageHandler } from "@handlers/message-handler.js";
 import { reactionHandler } from "@handlers/reaction-handler.js";
-import { RedisStorage } from "./storage/RedisStorage";
-import { HandlerContext } from "./types/global";
+import { RedisStorage } from "@redis-storage";
+import { HandlerContext } from "@types-local/global";
 
 const config = new Config();
 const storage = await RedisStorage.create(config);
