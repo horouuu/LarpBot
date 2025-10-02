@@ -7,6 +7,8 @@ declare global {
       TARGET_CHANNEL_ID: string;
       MEMBER_ROLE_ID: string;
       ACTION_THRESHOLD: string;
+      REDIS_USERNAME: string;
+      REDIS_PASSWORD: string;
     }
   }
 }
