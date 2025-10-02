@@ -36,7 +36,7 @@ export class RedisStorage implements Storage {
 
   public static async create(config: ConfigType) {
     const client = createClient({
-      password: config.redisPassword,
+      url: config.redisUrl,
     });
 
     client.on("err", (e) => console.error(e));
