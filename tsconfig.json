@@ -13,8 +13,10 @@
       "@commands/*": ["commands/*"],
       "@/*": ["*"],
       "@types-local/*": ["types/*"],
+      "@types-local/util": ["types/util.d.ts"],
       "@config": ["config.ts"],
-      "@handlers/*": ["handlers/*"]
+      "@handlers/*": ["handlers/*"],
+      "@storage": ["storage/Storage.ts"]
     }
   },
   "exclude": ["./node_modules", "src/scripts/update-types.ts"]
