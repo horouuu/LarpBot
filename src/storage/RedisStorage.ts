@@ -1,20 +1,16 @@
 import { createClient } from "redis";
 import { ConfigType } from "@config";
+import {
+  persistedConfigs,
+  PersistedConfigs,
+  PersistedKey,
+  Storage,
+} from "@storage";
+import { AtLeastOne, OrNullEntries } from "@types-local/util";
 
 const REDIS_NAMESPACE_GUILDS = "guilds";
 const REDIS_NAMESPACE_CONFIGS = "configs";
 
-const persistedConfigs = ["actionThreshold", "targetGuildId"] as const;
-type PersistedKey = (typeof persistedConfigs)[number];
-type PersistedConfigs = Pick<ConfigType, PersistedKey>;
-
-type AtLeastOne<T, Keys extends keyof T = keyof T> = Omit<T, Keys> &
-  {
-    [K in Keys]-?: Required<Pick<T, K>> &
-      Partial<Record<Exclude<Keys, K>, undefined>>;
-  }[Keys];
-
-type OrNullEntries<T> = { [K in keyof T]: T[K] | null };
 type RetrievedEntry<K extends PersistedKey = PersistedKey> = readonly [
   K,
   OrNullEntries<PersistedConfigs>[K]
@@ -31,8 +27,7 @@ function decodeValueFromKey(
       return value as any;
   }
 }
-
-export class RedisStorage {
+export class RedisStorage implements Storage {
   private client: ReturnType<typeof createClient>;
 
   private constructor(client: typeof this.client) {
@@ -81,7 +76,7 @@ export class RedisStorage {
   public async registerConfigs(
     guildId: string,
     configs: AtLeastOne<PersistedConfigs>
-  ) {
+  ): Promise<void> {
     for (const [key, value] of Object.entries(configs)) {
       const redisKey: string = `${REDIS_NAMESPACE_GUILDS}:${guildId}:${REDIS_NAMESPACE_CONFIGS}:${key}`;
       await this.set(redisKey, value.toString());
