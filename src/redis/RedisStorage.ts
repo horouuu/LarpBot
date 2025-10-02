@@ -1,10 +1,10 @@
-import { createClient, RedisClientType, RedisModules } from "redis";
+import { createClient } from "redis";
 import { ConfigType } from "@config";
 
-type PersistedConfigs = {
-  actionThreshold?: ConfigType["actionThreshold"];
-};
-
+type PersistedConfigs = Pick<ConfigType, "actionThreshold">;
+type AtLeastOne<T> = {
+  [K in keyof T]-?: Required<Pick<T, K>> & Omit<T, K>;
+}[keyof T];
 export class RedisStorage {
   private client: ReturnType<typeof createClient>;
 
@@ -12,7 +12,7 @@ export class RedisStorage {
     this.client = client;
   }
 
-  public static async create(config: Config) {
+  public static async create(config: ConfigType) {
     const client = createClient({
       password: config.redisPassword,
     });
@@ -39,6 +39,16 @@ export class RedisStorage {
     } catch (e) {
       console.error(e);
       throw new Error("Failed to fetch from database!");
+    }
+  }
+
+  public async registerConfigs(
+    configs: AtLeastOne<PersistedConfigs>,
+    guildId: string
+  ) {
+    for (const [key, value] of Object.entries(configs)) {
+      const redisKey: string = `${guildId}:${key}`;
+      await this.set(redisKey, value.toString());
     }
   }
 
