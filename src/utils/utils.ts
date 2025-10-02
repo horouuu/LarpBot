@@ -1,5 +1,5 @@
-import { persistedConfigs, PersistedKey } from "@/storage/Storage";
-import { CommandContext } from "@/types/commands";
+import { persistedConfigs, PersistedKey } from "@storage";
+import { CommandContext } from "@types-local/commands";
 
 type SnakeToCamel<S extends string> = S extends `${infer Head}_${infer Tail}`
   ? `${Lowercase<Head>}${Capitalize<SnakeToCamel<Tail>>}`
