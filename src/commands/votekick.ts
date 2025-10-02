@@ -56,7 +56,7 @@ function isVoteEmoji(str: any): str is VoteEmojiType {
 }
 
 async function kickMember(
-  message: Message,
+  message: Message | null,
   user: User,
   member: GuildMember,
   total: number,
@@ -78,14 +78,16 @@ async function kickMember(
         await interaction.reply(msg);
       }
     } else {
-      await message.reply("I don't have the permissions to kick that user!");
+      await message?.reply("I don't have the permissions to kick that user!");
     }
   } catch (e) {
     console.error(e);
   }
 }
 
-function collectHandler(voteCtx: VoteContext): Promise<void> {
+async function collectHandler(
+  voteCtx: Required<VoteContext>
+): Promise<undefined> {
   const {
     reaction,
     user,
@@ -106,7 +108,13 @@ function collectHandler(voteCtx: VoteContext): Promise<void> {
   // check votes
   if (total >= actionThreshold) {
     if (reaction.emoji.name === EMOJI_AYE) {
-      kickMember(response.resource.message, target, member, total, interaction);
+      kickMember(
+        response.resource?.message ?? null,
+        target,
+        member,
+        total,
+        interaction
+      );
     } else if (reaction.emoji.name === EMOJI_NAY) {
       console.log(
         `Vote against member ${target.username} | ${member.id} ${
@@ -143,8 +151,9 @@ const votekick = {
       required: true,
     },
   ],
-  execute: async (interaction: Interaction<CacheType>, config: ConfigType) => {
+  execute: async (interaction: Interaction<CacheType>, config?: ConfigType) => {
     if (!interaction.isChatInputCommand()) return;
+    if (!config) throw new Error("Config missing for command: Votekick");
     const response = await interaction.deferReply({ withResponse: true });
 
     try {
@@ -156,6 +165,8 @@ const votekick = {
       }
 
       // member check
+      if (!interaction.guild)
+        throw new Error("Unable to find guild of interaction.");
       const member = await interaction.guild.members.fetch(target.id);
       if (!member) {
         await interaction.editReply("Member no longer in server.");
@@ -171,6 +182,8 @@ const votekick = {
         content: `Vote to kick member: ${target}?`,
       });
 
+      if (!response.resource?.message)
+        throw new Error("Unable to find response to interaction.");
       await response.resource.message.react(EMOJI_AYE);
       await response.resource.message.react(EMOJI_NAY);
 
@@ -195,7 +208,7 @@ const votekick = {
       reactionCollector.on(
         "collect",
         (reaction: MessageReaction, user: User) => {
-          const voteCtx: VoteContext = {
+          const voteCtx: Required<VoteContext> = {
             reaction,
             user,
             interaction,
@@ -215,6 +228,7 @@ const votekick = {
 
       reactionCollector.on("end", (_, reason: string) => {
         if (reason === "time") {
+          if (!response.resource?.message) return;
           response.resource.message
             .reply(`Vote on member ${target} expired.`)
             .catch((e) => console.error(e));

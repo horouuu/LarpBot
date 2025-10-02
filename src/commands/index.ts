@@ -2,9 +2,10 @@ import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { Command } from "@types-local/commands";
+import { CommandName } from "@/types/generated/commands";
 
 export type CommandsMap = {
-  ping: Command;
+  [N in CommandName]: Command;
 };
 
 const extension: string = process.env.NODE_ENV !== "production" ? ".ts" : ".js";

@@ -1,4 +1,4 @@
-import type { ConfigType as ConfigType } from "@config";
+import type { ConfigType } from "@config";
 import { CommandName } from "@/types/generated/commands";
 import { CommandsMap, loadCommands } from "@commands/index.js";
 import {
