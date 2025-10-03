@@ -18,6 +18,7 @@ import {
   CommandContextRequire,
 } from "@types-local/commands";
 import { ConfigType } from "@config";
+import { catchAllInteractionReply } from "@utils";
 
 type VoteEmojiType = "❌" | "✅";
 const EMOJI_AYE: VoteEmojiType = "✅";
@@ -32,6 +33,15 @@ type VoteContext = {
   response: InteractionCallbackResponse;
   reactionCollector: ReactionCollector;
   interaction?: ChatInputCommandInteraction<CacheType>;
+};
+
+type KickContext = {
+  message: Message | null;
+  user: User;
+  member: GuildMember;
+  total: number;
+  interaction: ChatInputCommandInteraction<CacheType>;
+  ban: boolean;
 };
 
 function printStatus(
@@ -59,30 +69,37 @@ function isVoteEmoji(str: any): str is VoteEmojiType {
   return str === EMOJI_AYE || str === EMOJI_NAY;
 }
 
-async function kickMember(
-  message: Message | null,
-  user: User,
-  member: GuildMember,
-  total: number,
-  interaction: ChatInputCommandInteraction<CacheType>
-): Promise<void> {
+async function kickMember(kickCtx: KickContext): Promise<void> {
+  const { member, ban, user, total, interaction, message } = kickCtx;
   try {
-    if (member.kickable) {
-      member.kick(`Votekicked by ${total} other user(s).`);
+    const condition = ban ? member.bannable : member.kickable;
+    if (condition) {
+      if (ban) {
+        await member.ban({ reason: `Vote-banned by ${total} other user(s)` });
+      } else {
+        await member.kick(`Vote-kicked by ${total} other user(s)`);
+      }
+
       console.log(
-        `Successfully kicked member ${user.username} | ${member.id} ${
+        `Successfully ${ban ? "banned" : "kicked"} member ${user.username} | ${
+          member.id
+        } ${
           member.nickname ? `(${member.nickname})` : `(${member.displayName})`
         } from guild ${member.guild.name} (${member.guild.id})`
       );
 
-      const msg = `Vote to kick ${user} passed with ${total} user(s) for the motion.`;
+      const msg = `Vote to ${
+        ban ? "ban" : "kick"
+      } ${user} passed with ${total} user(s) for the motion.`;
       if (interaction.deferred) {
         await interaction.editReply(msg);
       } else if (interaction.isRepliable()) {
         await interaction.reply(msg);
       }
     } else {
-      await message?.reply("I don't have the permissions to kick that user!");
+      await message?.reply(
+        `I don't have the permissions to ${ban ? "ban" : "kick"} that user!`
+      );
     }
   } catch (e) {
     console.error(e);
@@ -107,18 +124,20 @@ async function collectHandler(
   if (!isVoteEmoji(reaction.emoji.name)) return;
   const type: VoteEmojiType = reaction.emoji.name;
   const total = getVoteTotal(reaction, target);
+  const ban = interaction.options.getBoolean("ban");
   printStatus(target, user, total, type);
 
   // check votes
   if (total >= actionThreshold) {
     if (reaction.emoji.name === EMOJI_AYE) {
-      kickMember(
-        response.resource?.message ?? null,
-        target,
+      kickMember({
+        message: response.resource?.message ?? null,
+        user: target,
         member,
         total,
-        interaction
-      );
+        interaction,
+        ban: ban ?? false,
+      });
     } else if (reaction.emoji.name === EMOJI_NAY) {
       console.log(
         `Vote against member ${target.username} | ${member.id} ${
@@ -127,7 +146,9 @@ async function collectHandler(
       );
       interaction
         .editReply(
-          `Vote to kick ${target} failed with ${total} user(s) against the motion.`
+          `Vote to ${
+            ban ? "ban" : "kick"
+          } ${target} failed with ${total} user(s) against the motion.`
         )
         .catch((e) => console.error(e));
     }
@@ -153,6 +174,12 @@ const votekick = {
       name: "target",
       description: "Votekick target",
       required: true,
+    },
+    {
+      type: ApplicationCommandOptionType.Boolean,
+      name: "ban",
+      description: "Bans the target instead of kicking them.",
+      required: false,
     },
   ],
   execute: async (
@@ -184,9 +211,9 @@ const votekick = {
         );
         return;
       }
-
+      const ban = interaction.options.getBoolean("ban");
       await interaction.editReply({
-        content: `Vote to kick member: ${target}?`,
+        content: `Vote to ${ban ? "ban" : "kick"} member: ${target}?`,
       });
 
       if (!response.resource?.message)
@@ -242,38 +269,14 @@ const votekick = {
         }
       });
     } catch (e) {
-      let errMsg =
-        "Something went wrong in the background. Contact the developers for help.";
-
-      if (e instanceof DiscordAPIError) {
-        switch (e.code) {
-          case RESTJSONErrorCodes.UnknownMember:
-            errMsg = "That member isn't in the server!";
-            break;
-          case RESTJSONErrorCodes.UnknownInteraction:
-            console.warn("Interaction expired.");
-            return;
-          case RESTJSONErrorCodes.UnknownMessage:
-            console.warn("Message deleted.");
-            return;
-          default:
-            console.error(e);
-        }
+      let errMsg = "";
+      if (
+        e instanceof DiscordAPIError &&
+        e.code == RESTJSONErrorCodes.UnknownMember
+      ) {
+        errMsg = "That member isn't in the server.";
       }
-
-      try {
-        if (interaction.isRepliable()) {
-          if (interaction.replied || interaction.deferred) {
-            await interaction.followUp(errMsg).catch((e) => console.error(e));
-          } else {
-            await interaction.reply(errMsg).catch((e) => console.error(e));
-          }
-        } else {
-          console.error("Couldn't forward request through interaction reply or follow up.")
-        }
-      } catch (e) {
-        console.error(e);
-      }
+      catchAllInteractionReply(interaction, errMsg);
     }
   },
 } satisfies Command;
