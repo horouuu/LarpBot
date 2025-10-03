@@ -1,6 +1,9 @@
 import { persistedConfigs, PersistedKey } from "@storage";
 import { CommandContext } from "@types-local/commands";
 
+const ERR_MSG_GENERIC =
+  "Something went wrong in the background. Contact the developers for help.";
+
 type SnakeToCamel<S extends string> = S extends `${infer Head}_${infer Tail}`
   ? `${Lowercase<Head>}${Capitalize<SnakeToCamel<Tail>>}`
   : `${Lowercase<S>}`;
@@ -17,13 +20,15 @@ function snakeToCamel<T extends string>(str: T): SnakeToCamel<T> {
 }
 
 async function catchAllInteractionReply(
-  interaction: CommandContext["interaction"]
+  interaction: CommandContext["interaction"],
+  errMsg: string = ERR_MSG_GENERIC
 ) {
-  let errMsg =
-    "Something went wrong in the background. Contact the developers for help.";
+  if (!errMsg) errMsg = ERR_MSG_GENERIC;
   if (interaction.isRepliable()) {
     if (interaction.replied || interaction.deferred) {
       interaction.followUp(errMsg).catch((e) => console.error(e));
+    } else {
+      interaction.reply(errMsg).catch((e) => console.error(e));
     }
   } else {
     console.error(
