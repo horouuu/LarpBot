@@ -1,8 +1,4 @@
-import {
-  Command,
-  CommandContext,
-  CommandContextRequire,
-} from "@types-local/commands";
+import { Command, CommandContext } from "@types-local/commands";
 
 const ping = {
   name: "ping",
@@ -10,7 +6,10 @@ const ping = {
   execute: async (cmdContext: CommandContext) => {
     const { interaction } = cmdContext;
     if (!interaction.isChatInputCommand()) return;
-    await interaction.reply("Pong!");
+
+    try {
+      await interaction.reply("Pong!");
+    } catch (e) {}
   },
 } satisfies Command;
 
