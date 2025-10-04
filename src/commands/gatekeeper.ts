@@ -1,4 +1,4 @@
-import { gatekeeperReactionHandler } from "@handlers/gatekeeper";
+import { createGatekeeperCollectors } from "@handlers/gatekeeper/gatekeeper-reactions";
 import {
   Command,
   CommandContext,
@@ -10,7 +10,6 @@ import {
   ChannelType,
   DiscordAPIError,
   Guild,
-  Message,
   MessageReaction,
   MessageType,
   ReactionCollector,
@@ -63,34 +62,6 @@ const gatekeeperData = new SlashCommandBuilder()
       )
   );
 
-async function registerChannelCollector(
-  ctx: GatekeeperContext & { channel: TextChannel }
-) {
-  const { interaction, channel } = ctx;
-  const collector = channel.createMessageCollector({
-    filter: (msg) => msg.type === MessageType.UserJoin,
-  });
-
-  collector.on("collect", async (msg) => {
-    try {
-      await msg.react(EmojiEnum.EMOJI_AYE);
-      await msg.react(EmojiEnum.EMOJI_NAY);
-
-      const rCollector = msg.createReactionCollector({
-        filter: (reaction) => isVoteEmoji(reaction),
-      });
-
-      rCollector.on("collect", (reaction, user) =>
-        gatekeeperReactionHandler(reaction, user, rCollector, ctx)
-      );
-    } catch (e) {
-      console.error(e);
-    }
-  });
-
-  interaction.followUp(`Successfully registered ${channel} to Gatekeeper.`);
-}
-
 async function handleConfirmOverwrite(
   ctx: GatekeeperContext & {
     collector: ReactionCollector;
@@ -105,7 +76,10 @@ async function handleConfirmOverwrite(
     collector.stop();
     if (reaction.emoji.name === EmojiEnum.EMOJI_AYE) {
       await storage.chRegGatekeeper(guild.id, channel.id, true);
-      registerChannelCollector({ ...ctx, channel });
+      await createGatekeeperCollectors({ ...ctx, channel });
+      await interaction.followUp(
+        `Successfully registered ${channel} to Gatekeeper.`
+      );
     } else {
       await interaction.followUp("Gatekeeper registration cancelled.");
     }
@@ -125,7 +99,7 @@ async function handleAlreadyWatching(
   const { interaction, res, guild, channel } = ctx;
   if (res.watching === channel.id) {
     await interaction.reply(
-      `Gatekeeper is already watching channel ${channel.id}!`
+      `Gatekeeper is already watching channel ${channel}!`
     );
     throw new Error("Gatekeeper: Channel already registered");
   } else {
@@ -196,7 +170,7 @@ async function handleRegister(ctx: GatekeeperContext): Promise<void> {
     if (!res.success) {
       await handleAlreadyWatching({ ...ctx, res, guild, channel });
     } else {
-      await registerChannelCollector({ ...ctx, channel });
+      await createGatekeeperCollectors({ ...ctx, channel });
     }
   } catch (e) {
     if (e instanceof DiscordAPIError || e instanceof GatekeeperError) throw e;
