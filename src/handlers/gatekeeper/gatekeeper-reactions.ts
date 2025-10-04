@@ -88,12 +88,13 @@ export async function gatekeeperReactionHandler(
 
         if (!guildMemberRole) {
           await reaction.message.reply(
-            "Your server does not have a member role configured.\nUse `/config set memberRole` to configure it."
+            "Your server does not have a member role configured.\nUse `/config set memberRole` to configure it. You can react to the vote again afterwards."
           );
           return;
         }
 
         await member.roles.add(guildMemberRole);
+
         await reaction.message.react(EmojiEnum.EMOJI_WELCOME);
       }
       collector.stop();
@@ -102,15 +103,15 @@ export async function gatekeeperReactionHandler(
       try {
         if (e instanceof DiscordAPIError && e.code == 50013) {
           await reaction.message.reply(
-            "I don't seem to have permissions to take action here. Please update my permissions and react to the vote again."
+            "Make sure I have permissions to both assign roles and assign the particular role that has been set!\nPlease update my permissions and react to the vote again."
           );
         } else {
           await reaction.message.reply(
             "Something went wrong on the backend. Contact the developer for help."
           );
         }
-      } catch (e) {
-        console.error(`[gatekeeper-reactions]: ${e}`);
+      } catch (err) {
+        console.error(`[gatekeeper-reactions]: ${err}`);
       }
     }
   }
