@@ -167,6 +167,28 @@ export class RedisStorage implements Storage {
     return out as OrNullEntries<PersistedConfigs>;
   }
 
+  // abstract these 3 if more commands require registration/delisting
+  public async chRegGatekeeper(
+    guildId: string,
+    channelId: string
+  ): Promise<void> {
+    const key = `${RedisNamespaces.GUILDS}:${guildId}:${RedisNamespaces.COMMANDS}:gatekeeper:channelsWatched`;
+    await this.sAdd(key, channelId);
+  }
+
+  public async chGetGatekeeper(guildId: string): Promise<string[]> {
+    const key = `${RedisNamespaces.GUILDS}:${guildId}:${RedisNamespaces.COMMANDS}:gatekeeper:channelsWatched`;
+    return await this.sGet(key);
+  }
+
+  public async chDelGatekeeper(
+    guildId: string,
+    channelId: string
+  ): Promise<void> {
+    const key = `${RedisNamespaces.GUILDS}:${guildId}:${RedisNamespaces.COMMANDS}:gatekeeper:channelsWatched`;
+    await this.sRem(key, channelId);
+  }
+
   public async destroy(): Promise<void> {
     await this.client.close();
   }
