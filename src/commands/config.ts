@@ -98,8 +98,8 @@ const config = {
           throw new Error("Unknown subcommand chosen.");
       }
     } catch (e) {
-      catchAllInteractionReply(interaction);
       console.error(`[config]: ${e}`);
+      catchAllInteractionReply(interaction);
     }
   },
 } satisfies Command;
