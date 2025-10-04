@@ -35,8 +35,4 @@ client.on(Events.InteractionCreate, (interaction) =>
 
 client.on(Events.MessageCreate, (msg) => messageHandler(msg, handlerCtx));
 
-client.on(Events.MessageReactionAdd, (reaction, user) =>
-  reactionHandler(reaction, user, handlerCtx)
-);
-
 client.login(config.token);
