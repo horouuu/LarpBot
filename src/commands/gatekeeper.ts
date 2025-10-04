@@ -1,4 +1,4 @@
-import { createGatekeeperCollectors } from "@handlers/gatekeeper/gatekeeper-reactions";
+import { createGatekeeperCollectors } from "@handlers/gatekeeper/gatekeeper-reactions.js";
 import {
   Command,
   CommandContext,
@@ -10,7 +10,6 @@ import {
   DiscordAPIError,
   Guild,
   MessageReaction,
-  MessageType,
   ReactionCollector,
   SlashCommandBuilder,
   TextChannel,
@@ -21,6 +20,7 @@ enum GatekeeperEnum {
   GK_CMD_NAME = "gatekeeper",
   REGISTER = "register",
   DELIST = "delist",
+  VIEW = "view",
   CHANNEL = "channel",
 }
 
@@ -49,15 +49,14 @@ const gatekeeperData = new SlashCommandBuilder()
   )
   .addSubcommand((opt) =>
     opt
+      .setName(GatekeeperEnum.VIEW)
+      .setDescription("Returns channel currently being watched by gatekeeper.")
+  )
+  .addSubcommand((opt) =>
+    opt
       .setName(GatekeeperEnum.DELIST)
       .setDescription(
         "Delists this channel from gatekeeper. Optionally, a channel can be specified."
-      )
-      .addChannelOption((opt) =>
-        opt
-          .setName(GatekeeperEnum.CHANNEL)
-          .setDescription("Specifies channel to be delisted from gatekeeper.")
-          .setRequired(false)
       )
   );
 
@@ -77,7 +76,7 @@ async function handleConfirmOverwrite(
       await storage.chRegGatekeeper(guild.id, channel.id, true);
       await createGatekeeperCollectors({ ...ctx, channel });
       await interaction.followUp(
-        `Successfully registered ${channel} to Gatekeeper.`
+        `Successfully registered ${channel} to gatekeeper.`
       );
     } else {
       await interaction.followUp("Gatekeeper registration cancelled.");
@@ -170,10 +169,46 @@ async function handleRegister(ctx: GatekeeperContext): Promise<void> {
       await handleAlreadyWatching({ ...ctx, res, guild, channel });
     } else {
       await createGatekeeperCollectors({ ...ctx, channel });
+      await interaction.reply(
+        `Successfully registered ${channel} to gatekeeper.`
+      );
     }
   } catch (e) {
     if (e instanceof DiscordAPIError || e instanceof GatekeeperError) throw e;
     console.log((e as Error).message);
+  }
+}
+
+async function handleView(ctx: GatekeeperContext) {
+  const { interaction, storage } = ctx;
+  const guild = interaction.guild;
+  if (!guild) throw new Error("Gatekeeper: couldn't fetch guild");
+  const watchedChannelId = await storage.chGetGatekeeper(guild.id);
+  if (!watchedChannelId) {
+    await interaction.reply(
+      "Gatekeeper is not currently watching any channel in this server."
+    );
+  } else {
+    const channel = await guild.channels.fetch(watchedChannelId);
+    await interaction.reply(
+      `Gatekeeper is currently watching channel ${channel} in server **${guild}**.`
+    );
+  }
+}
+
+async function handleDelist(ctx: GatekeeperContext) {
+  const { interaction, storage } = ctx;
+  const guild = interaction.guild;
+  if (!guild) throw new Error("Gatekeeper: couldn't fetch guild");
+  const res = await storage.chDelGatekeeper(guild.id);
+  if (!res.success) {
+    await interaction.reply(
+      "Gatekeeper is not currently watching any channel in this server!"
+    );
+  } else {
+    await interaction.reply(
+      `Successfully delisted channel <#${res.delisted}> from gatekeeper.`
+    );
   }
 }
 
@@ -187,7 +222,11 @@ async function execute(commandCtx: GatekeeperContext): Promise<void> {
       case GatekeeperEnum.REGISTER:
         await handleRegister(commandCtx);
         break;
+      case GatekeeperEnum.VIEW:
+        await handleView(commandCtx);
+        break;
       case GatekeeperEnum.DELIST:
+        await handleDelist(commandCtx);
         break;
     }
   } catch (e) {
