@@ -101,9 +101,9 @@ export class RedisStorage implements Storage {
   private async set(key: string, value: string): Promise<void> {
     try {
       const type = await this.client.type(key);
-      if (type !== RedisTypes.STRING)
+      if (type !== RedisTypes.STRING && type !== RedisTypes.NONE)
         throw new Error(
-          `ERROR: sRem Attempted to remove set item from key storing non-set value at key ${key}.`
+          `ERROR: Attempted to set string value at key storing non-string value ${key}.`
         );
       await this.client.set(key, value);
     } catch (e) {
