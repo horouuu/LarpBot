@@ -66,6 +66,3 @@ export class Config {
 }
 
 export interface Config extends EnvAccessors {}
-
-const config = new Config();
-console.log(config.actionThreshold);
