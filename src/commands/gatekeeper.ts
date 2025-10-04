@@ -1,5 +1,4 @@
 import { gatekeeperReactionHandler } from "@handlers/gatekeeper";
-import { messageHandler } from "@handlers/message-handler";
 import {
   Command,
   CommandContext,
