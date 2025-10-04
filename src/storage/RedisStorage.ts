@@ -182,11 +182,14 @@ export class RedisStorage implements Storage {
       throw new Error("Failed to fetch from database!");
     }
   }
-  public async registerConfigs(
+  public async registerConfig<T extends PersistedKey>(
     guildId: string,
-    configs: AtLeastOne<PersistedConfigs>
+    config: {
+      [K in T]: PersistedConfigs[T];
+    }
   ): Promise<void> {
-    for (const [key, value] of Object.entries(configs)) {
+    for (const key of Object.keys(config) as T[]) {
+      const value = config[key];
       const redisKey: string = `${RedisNamespaces.GUILDS}:${guildId}:${RedisNamespaces.CONFIGS}:${key}`;
       await this.set(redisKey, value.toString());
     }
@@ -218,7 +221,7 @@ export class RedisStorage implements Storage {
   public async chRegGatekeeper(
     guildId: string,
     channelId: string,
-    force?: boolean
+    force = false
   ) {
     const key = `${RedisNamespaces.GUILDS}:${guildId}:${RedisNamespaces.COMMANDS}:gatekeeper:channelsWatched`;
 
@@ -247,12 +250,34 @@ export class RedisStorage implements Storage {
   public async getAllGatekept() {
     const match = "guilds:*:commands:gatekeeper:channelsWatched";
     const keys = await this.scan({ match: match });
+    if (keys.length == 0) return [];
     const vals = await this.mGet(keys);
     const pairs = keys.map((k, i) => ({
       guildId: k.split(":")[1],
       channelId: vals[i],
     }));
     return pairs;
+  }
+
+  public async checkGuildMemberRole(guildId: string) {
+    const key = `${RedisNamespaces.GUILDS}:${guildId}:configs:memberRole`;
+    const memberId = await this.get(key);
+    return memberId;
+  }
+
+  public async setGuildMemberRole(
+    guildId: string,
+    roleId: string,
+    force = false
+  ) {
+    const key = `${RedisNamespaces.GUILDS}:${guildId}:memberRole`;
+    const current = await this.get(key);
+    if (current && !force) {
+      return { success: false, current: current };
+    } else {
+      await this.set(key, roleId);
+      return { success: true as true };
+    }
   }
 
   public async destroy(): Promise<void> {
