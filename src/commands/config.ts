@@ -1,11 +1,12 @@
-import { ApplicationCommandOptionType } from "discord.js";
+import { ApplicationCommandOptionType, Role } from "discord.js";
 import {
   Command,
   CommandContext,
   CommandContextRequire,
 } from "@types-local/commands";
-import { PersistedKey, Storage } from "@storage";
+import { PersistedConfigs, PersistedKey, Storage } from "@storage";
 import { catchAllInteractionReply, isPersistedKey, snakeToCamel } from "@utils";
+import { AtLeastOne } from "@types-local/util";
 
 enum ConfigCommandOptions {
   VIEW = "view",
@@ -28,18 +29,41 @@ async function handleView(viewCtx: ConfigCommandContext) {
   await interaction.reply(viewReply);
 }
 
+function getConfigObj<K extends PersistedKey>(
+  key: PersistedKey,
+  value: PersistedConfigs[K]
+): Pick<PersistedConfigs, K> {
+  return { [key]: value } as Pick<PersistedConfigs, K>;
+}
+
 async function handleSet(setCtx: ConfigCommandContext) {
   const { interaction, guildId, storage } = setCtx;
   const toSetKey = snakeToCamel(interaction.options.getSubcommand());
-  const toSetValue = interaction.options.getInteger("threshold");
+
+  let toSetValue = null;
+  let toPrint = null;
+  switch (toSetKey) {
+    case "actionThreshold":
+      toSetValue = interaction.options.getInteger("threshold");
+      toPrint = `\`${toSetValue}\``;
+      break;
+    case "memberRole":
+      toPrint = interaction.options.getRole("role");
+      toSetValue = toPrint?.id;
+
+      break;
+    default:
+      throw new Error("Invalid config key.");
+  }
+
   if (!toSetValue) throw Error(`Missing value to set key ${toSetKey}`);
   if (!isPersistedKey(toSetKey)) throw Error(`Invalid key to set: ${toSetKey}`);
 
-  await storage.registerConfigs(guildId, {
-    [toSetKey as PersistedKey]: toSetValue,
-  });
+  const configPayload = getConfigObj(toSetKey, toSetValue);
+  await storage.registerConfig(guildId, configPayload);
+
   await interaction.reply(
-    `Successfully set \`${toSetKey}\` to \`${toSetValue}\` for server **${interaction.guild?.name}**.`
+    `Successfully set \`${toSetKey}\` to ${toPrint} for server **${interaction.guild?.name}**.`
   );
 }
 
@@ -61,13 +85,27 @@ const config = {
           type: ApplicationCommandOptionType.Subcommand,
           name: "action_threshold",
           description:
-            "Threshold for a vote to pass or fail (excluding bots and target).",
+            "Change the threshold for a vote to pass or fail (excluding bots and target).",
           options: [
             {
               type: ApplicationCommandOptionType.Integer,
               name: "threshold",
               description:
                 "Number of votes it takes to pass or fail a vote (excluding bots and target).",
+              required: true,
+            },
+          ],
+        },
+        {
+          type: ApplicationCommandOptionType.Subcommand,
+          name: "member_role",
+          description:
+            "Change the role that gatekeeper will assign to new members.",
+          options: [
+            {
+              type: ApplicationCommandOptionType.Role,
+              name: "role",
+              description: "Role for gatekeeper to assign new members.",
               required: true,
             },
           ],
@@ -98,8 +136,8 @@ const config = {
           throw new Error("Unknown subcommand chosen.");
       }
     } catch (e) {
-      catchAllInteractionReply(interaction);
       console.error(`[config]: ${e}`);
+      catchAllInteractionReply(interaction);
     }
   },
 } satisfies Command;

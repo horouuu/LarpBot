@@ -10,6 +10,7 @@ import {
 } from "discord.js";
 import { CommandContext } from "@types-local/commands";
 import { HandlerContext } from "@types-local/global";
+import { catchAllInteractionReply } from "@utils";
 
 export async function initCommands(config: ConfigType) {
   const commands = await loadCommands();
@@ -56,18 +57,7 @@ export async function commandHandler(
     await commands[interaction.commandName].execute(commandCtx);
   } catch (e) {
     console.error(e);
-
-    try {
-      const notifMsg =
-        "Something went wrong! Please contact the developer for help.";
-      if (interaction.replied || interaction.deferred) {
-        interaction.followUp(notifMsg);
-      } else {
-        interaction.reply(notifMsg);
-      }
-    } catch (e) {
-      console.error("Error notification failed to send:\n", e);
-    }
+    catchAllInteractionReply(interaction);
   }
 }
 

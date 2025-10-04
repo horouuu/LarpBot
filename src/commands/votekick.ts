@@ -1,6 +1,5 @@
 import {
   CacheType,
-  Interaction,
   ApplicationCommandOptionType,
   MessageReaction,
   User,
@@ -18,11 +17,7 @@ import {
   CommandContextRequire,
 } from "@types-local/commands";
 import { ConfigType } from "@config";
-import { catchAllInteractionReply } from "@utils";
-
-type VoteEmojiType = "❌" | "✅";
-const EMOJI_AYE: VoteEmojiType = "✅";
-const EMOJI_NAY: VoteEmojiType = "❌";
+import { catchAllInteractionReply, isVoteEmoji, EmojiEnum } from "@utils";
 
 type VoteContext = {
   reaction: MessageReaction;
@@ -48,7 +43,7 @@ function printStatus(
   target: User,
   user: User,
   total: number,
-  type: VoteEmojiType,
+  type: EmojiEnum,
   removed: boolean = false
 ): void {
   console.log(
@@ -63,10 +58,6 @@ function getVoteTotal(reaction: MessageReaction, target: User): number {
   const botsInVote = reaction.users.cache.filter((user: User) => user.bot).size;
   const total = reaction.count - targetInVote - botsInVote; // deduct all bots and target's votes
   return total;
-}
-
-function isVoteEmoji(str: any): str is VoteEmojiType {
-  return str === EMOJI_AYE || str === EMOJI_NAY;
 }
 
 async function kickMember(kickCtx: KickContext): Promise<void> {
@@ -122,14 +113,14 @@ async function collectHandler(
   const actionThreshold = config.actionThreshold;
 
   if (!isVoteEmoji(reaction.emoji.name)) return;
-  const type: VoteEmojiType = reaction.emoji.name;
+  const type: EmojiEnum = reaction.emoji.name;
   const total = getVoteTotal(reaction, target);
   const ban = interaction.options.getBoolean("ban");
   printStatus(target, user, total, type);
 
   // check votes
   if (total >= actionThreshold) {
-    if (reaction.emoji.name === EMOJI_AYE) {
+    if (reaction.emoji.name === EmojiEnum.EMOJI_AYE) {
       kickMember({
         message: response.resource?.message ?? null,
         user: target,
@@ -138,7 +129,7 @@ async function collectHandler(
         interaction,
         ban: ban ?? false,
       });
-    } else if (reaction.emoji.name === EMOJI_NAY) {
+    } else if (reaction.emoji.name === EmojiEnum.EMOJI_NAY) {
       console.log(
         `Vote against member ${target.username} | ${member.id} ${
           member.nickname ? `(${member.nickname})` : `(${member.displayName})`
@@ -159,7 +150,7 @@ async function collectHandler(
 function removeHandler(voteCtx: VoteContext): void {
   const { reaction, user, target } = voteCtx;
   if (!isVoteEmoji(reaction.emoji.name)) return;
-  const type: VoteEmojiType = reaction.emoji.name;
+  const type: EmojiEnum = reaction.emoji.name;
   const total = getVoteTotal(reaction, target);
   printStatus(target, user, total, type, true);
 }
@@ -218,8 +209,8 @@ const votekick = {
 
       if (!response.resource?.message)
         throw new Error("Unable to find response to interaction.");
-      await response.resource.message.react(EMOJI_AYE);
-      await response.resource.message.react(EMOJI_NAY);
+      await response.resource.message.react(EmojiEnum.EMOJI_AYE);
+      await response.resource.message.react(EmojiEnum.EMOJI_NAY);
 
       const filter = (reaction: MessageReaction, user: User) =>
         isVoteEmoji(reaction.emoji.name) && !user.bot;

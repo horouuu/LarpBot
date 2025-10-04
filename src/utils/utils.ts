@@ -1,6 +1,13 @@
 import { persistedConfigs, PersistedKey } from "@storage";
 import { CommandContext } from "@types-local/commands";
 
+export enum EmojiEnum {
+  EMOJI_AYE = "✅",
+  EMOJI_NAY = "❌",
+  EMOJI_BYE = "👋",
+  EMOJI_WELCOME = "🎉",
+}
+
 const ERR_MSG_GENERIC =
   "Something went wrong in the background. Contact the developers for help.";
 
@@ -41,5 +48,9 @@ function isPersistedKey(str: string): str is PersistedKey {
   return (persistedConfigs as readonly string[]).includes(str);
 }
 
+function isVoteEmoji(str: any): str is EmojiEnum {
+  return str === EmojiEnum.EMOJI_AYE || str === EmojiEnum.EMOJI_NAY;
+}
+
 export type { SnakeToCamel };
-export { snakeToCamel, catchAllInteractionReply, isPersistedKey };
+export { snakeToCamel, catchAllInteractionReply, isPersistedKey, isVoteEmoji };
