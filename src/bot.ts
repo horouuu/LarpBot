@@ -33,6 +33,4 @@ client.on(Events.InteractionCreate, (interaction) =>
   commandHandler(interaction, commands, handlerCtx)
 );
 
-client.on(Events.MessageCreate, (msg) => messageHandler(msg, handlerCtx));
-
 client.login(config.token);
