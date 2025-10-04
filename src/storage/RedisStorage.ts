@@ -17,6 +17,7 @@ enum RedisNamespaces {
 enum RedisTypes {
   STRING = "string",
   SET = "set",
+  NONE = "none",
 }
 
 type RetrievedEntry<K extends PersistedKey = PersistedKey> = readonly [
@@ -56,9 +57,9 @@ export class RedisStorage implements Storage {
   private async sAdd(key: string, members: string | string[]): Promise<void> {
     try {
       const type = await this.client.type(key);
-      if (type !== RedisTypes.SET)
+      if (type !== RedisTypes.SET && type !== RedisTypes.NONE)
         throw new Error(
-          `ERROR: sAdd tried to add set item to non-set store at key ${key}`
+          `ERROR: sAdd tried to add set item to non-set store (${type}) at key ${key}`
         );
 
       await this.client.sAdd(key, members);
@@ -82,7 +83,7 @@ export class RedisStorage implements Storage {
     }
   }
 
-  private async sRem(key: string, members: string) {
+  private async sRem(key: string, members: string): Promise<number> {
     try {
       const type = await this.client.type(key);
       if (type !== RedisTypes.SET)
@@ -90,7 +91,7 @@ export class RedisStorage implements Storage {
           `ERROR: sRem Attempted to remove set item from key storing non-set value at key ${key}.`
         );
 
-      await this.client.sRem(key, members);
+      return await this.client.sRem(key, members);
     } catch (e) {
       console.error(e);
       throw new Error("Failed to write to database!");
@@ -111,15 +112,31 @@ export class RedisStorage implements Storage {
     }
   }
 
-  private async get(key: string): Promise<string> {
+  private async get(key: string): Promise<string | null> {
     try {
       const type = await this.client.type(key);
-      if (type !== RedisTypes.STRING) {
+      if (type !== RedisTypes.STRING && type !== RedisTypes.NONE) {
         throw new Error(
           `ERROR: get tried to retrieve non-string value at key ${key}`
         );
       }
-      const res = (await this.client.get(key)) as string;
+      const res = await this.client.get(key);
+      return res;
+    } catch (e) {
+      console.error(e);
+      throw new Error("Failed to fetch from database!");
+    }
+  }
+
+  private async getDel(key: string): Promise<string | null> {
+    try {
+      const type = await this.client.type(key);
+      if (type !== RedisTypes.STRING && type !== RedisTypes.NONE) {
+        throw new Error(
+          `ERROR: get tried to retrieve non-string value at key ${key}`
+        );
+      }
+      const res = await this.client.getDel(key);
       return res;
     } catch (e) {
       console.error(e);
@@ -170,23 +187,31 @@ export class RedisStorage implements Storage {
   // abstract these 3 if more commands require registration/delisting
   public async chRegGatekeeper(
     guildId: string,
-    channelId: string
-  ): Promise<void> {
+    channelId: string,
+    force?: boolean
+  ) {
     const key = `${RedisNamespaces.GUILDS}:${guildId}:${RedisNamespaces.COMMANDS}:gatekeeper:channelsWatched`;
-    await this.sAdd(key, channelId);
+
+    const stored = await this.client.get(key);
+    if (stored && !force) {
+      return { success: false, watching: stored };
+    } else {
+      this.set(key, channelId);
+      return { success: true as true };
+    }
   }
 
-  public async chGetGatekeeper(guildId: string): Promise<string[]> {
+  public async chGetGatekeeper(guildId: string): Promise<string | null> {
     const key = `${RedisNamespaces.GUILDS}:${guildId}:${RedisNamespaces.COMMANDS}:gatekeeper:channelsWatched`;
-    return await this.sGet(key);
+    return await this.get(key);
   }
 
-  public async chDelGatekeeper(
-    guildId: string,
-    channelId: string
-  ): Promise<void> {
+  public async chDelGatekeeper(guildId: string): Promise<{ success: boolean }> {
     const key = `${RedisNamespaces.GUILDS}:${guildId}:${RedisNamespaces.COMMANDS}:gatekeeper:channelsWatched`;
-    await this.sRem(key, channelId);
+    const res = await this.getDel(key);
+    if (!res) return { success: false };
+
+    return { success: true };
   }
 
   public async destroy(): Promise<void> {
