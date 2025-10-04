@@ -1,3 +1,4 @@
+import { gatekeeperReactionHandler } from "@handlers/gatekeeper";
 import { messageHandler } from "@handlers/message-handler";
 import {
   Command,
@@ -9,6 +10,7 @@ import { catchAllInteractionReply, isVoteEmoji } from "@utils";
 import {
   ChannelType,
   DiscordAPIError,
+  Guild,
   Message,
   MessageReaction,
   MessageType,
@@ -79,30 +81,33 @@ async function registerChannelCollector(
         filter: (reaction) => isVoteEmoji(reaction),
       });
 
-      rCollector.on("collect", () => null);
+      rCollector.on("collect", (reaction, user) =>
+        gatekeeperReactionHandler(reaction, user, rCollector, ctx)
+      );
     } catch (e) {
       console.error(e);
     }
   });
+
+  interaction.followUp(`Successfully registered ${channel} to Gatekeeper.`);
 }
 
-async function handleCollect(
+async function handleConfirmOverwrite(
   ctx: GatekeeperContext & {
     collector: ReactionCollector;
     reaction: MessageReaction;
     user: User;
-    guildId: string;
-    channelId: string;
+    guild: Guild;
+    channel: TextChannel;
   }
 ) {
-  const { interaction, storage, reaction, guildId, channelId, collector } = ctx;
-
+  const { interaction, storage, reaction, guild, channel, collector } = ctx;
   try {
+    collector.stop();
     if (reaction.emoji.name === EmojiEnum.EMOJI_AYE) {
-      await storage.chRegGatekeeper(guildId, channelId, true);
-      // TODO: handle collectors
+      await storage.chRegGatekeeper(guild.id, channel.id, true);
+      registerChannelCollector({ ...ctx, channel });
     } else {
-      collector.stop();
       await interaction.followUp("Gatekeeper registration cancelled.");
     }
   } catch (e) {
@@ -114,13 +119,15 @@ async function handleCollect(
 async function handleAlreadyWatching(
   ctx: GatekeeperContext & {
     res: { success: boolean; watching: string };
-    guildId: string;
-    channelId: string;
+    guild: Guild;
+    channel: TextChannel;
   }
 ): Promise<void> {
-  const { interaction, res, guildId, channelId } = ctx;
-  if (res.watching === channelId) {
-    await interaction.reply("Gatekeeper is already watching this channel!");
+  const { interaction, res, guild, channel } = ctx;
+  if (res.watching === channel.id) {
+    await interaction.reply(
+      `Gatekeeper is already watching channel ${channel.id}!`
+    );
     throw new Error("Gatekeeper: Channel already registered");
   } else {
     const watchingChannel = await interaction.guild?.channels.fetch(
@@ -147,7 +154,14 @@ async function handleAlreadyWatching(
       time: 30000,
     });
     collector.on("collect", (reaction, user) =>
-      handleCollect({ ...ctx, reaction, user, guildId, channelId, collector })
+      handleConfirmOverwrite({
+        ...ctx,
+        reaction,
+        user,
+        guild,
+        channel,
+        collector,
+      })
     );
   }
 }
@@ -175,17 +189,15 @@ async function handleRegister(ctx: GatekeeperContext): Promise<void> {
       channel = currentChannel;
     }
 
-    const guildId = interaction.guildId;
-    if (!guildId) throw new Error("Gatekeeper: couldn't fetch guildId");
+    const guild = interaction.guild;
+    if (!guild) throw new Error("Gatekeeper: couldn't fetch guildId");
+
     const channelId = channel.id;
-    const res = await storage.chRegGatekeeper(guildId, channelId);
+    const res = await storage.chRegGatekeeper(guild.id, channelId);
     if (!res.success) {
-      await handleAlreadyWatching({ ...ctx, res, guildId, channelId });
+      await handleAlreadyWatching({ ...ctx, res, guild, channel });
     } else {
-      // TODO: handle listeners
-      await interaction.reply(
-        `Successfully registered channel ${channel} to gatekeeper.`
-      );
+      await registerChannelCollector({ ...ctx, channel });
     }
   } catch (e) {
     if (e instanceof DiscordAPIError || e instanceof GatekeeperError) throw e;
