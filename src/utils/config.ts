@@ -21,9 +21,6 @@ const EnvSchema = z.object({
   TARGET_CHANNEL_ID: z
     .string()
     .min(1, `Missing TARGET_CHANNEL_ID in ${variableStore}`),
-  MEMBER_ROLE_ID: z
-    .string()
-    .min(1, `Missing MEMBER_ROLE_ID in ${variableStore}`),
   ACTION_THRESHOLD: z.coerce.number<number>().int().positive().default(3),
   REDIS_URL: z.string().min(1, `Missing REDIS_URL in ${variableStore}`),
 });
@@ -32,7 +29,6 @@ const configVars = [
   "APP_ID",
   "TARGET_GUILD_ID",
   "TARGET_CHANNEL_ID",
-  "MEMBER_ROLE_ID",
   "ACTION_THRESHOLD",
   "REDIS_URL",
 ] as const;
