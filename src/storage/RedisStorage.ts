@@ -236,12 +236,12 @@ export class RedisStorage implements Storage {
     return await this.get(key);
   }
 
-  public async chDelGatekeeper(guildId: string): Promise<{ success: boolean }> {
+  public async chDelGatekeeper(guildId: string) {
     const key = `${RedisNamespaces.GUILDS}:${guildId}:${RedisNamespaces.COMMANDS}:gatekeeper:channelsWatched`;
     const res = await this.getDel(key);
-    if (!res) return { success: false };
+    if (!res) return { success: false as false };
 
-    return { success: true };
+    return { success: true, delisted: res };
   }
 
   public async getAllGatekept() {
