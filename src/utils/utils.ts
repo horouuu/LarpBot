@@ -1,6 +1,12 @@
 import { persistedConfigs, PersistedKey } from "@storage";
 import { CommandContext } from "@types-local/commands";
-import { EmojiEnum } from "@types-local/util";
+
+export enum EmojiEnum {
+  EMOJI_AYE = "✅",
+  EMOJI_NAY = "❌",
+  EMOJI_BYE = "👋",
+  EMOJI_WELCOME = "🎉",
+}
 
 const ERR_MSG_GENERIC =
   "Something went wrong in the background. Contact the developers for help.";

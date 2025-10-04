@@ -5,10 +5,3 @@ type AtLeastOne<T, Keys extends keyof T = keyof T> = {
 
 type OrNullEntries<T> = { [K in keyof T]: T[K] | null };
 export type { AtLeastOne, OrNullEntries };
-
-export enum EmojiEnum {
-  EMOJI_AYE = "✅",
-  EMOJI_NAY = "❌",
-  EMOJI_BYE = "👋",
-  EMOJI_WELCOME = "🎉",
-}
