@@ -1,7 +1,7 @@
 import { Partials } from "discord.js";
 import { Client, Events, GatewayIntentBits } from "discord.js";
 import { Config } from "@config";
-import { commandHandler, initCommands } from "@handlers/command-handler.js";
+import { commandHandler, initCommands } from "@handlers/command-handler";
 import { RedisStorage } from "@redis-storage";
 import { HandlerContext } from "@types-local/global";
 import { gatekeeperEventLoader } from "@handlers/gatekeeper/gatekeeper-event-loader";
