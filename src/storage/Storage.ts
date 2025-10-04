@@ -5,6 +5,10 @@ const persistedConfigs = ["actionThreshold"] as const;
 type PersistedKey = (typeof persistedConfigs)[number];
 type PersistedConfigs = Pick<ConfigType, PersistedKey>;
 type ChRegReturn = { success: true } | { success: false; watching: string };
+type RetrievedGatekept = {
+  guildId: string;
+  channelId: string;
+};
 export abstract class Storage {
   abstract registerConfigs(
     guildId: string,
@@ -27,6 +31,8 @@ export abstract class Storage {
     guildId: string,
     channelId: string
   ): Promise<{ success: boolean }>;
+
+  abstract getAllGatekept(): Promise<RetrievedGatekept[]>;
 }
 
 export type { PersistedKey, PersistedConfigs };

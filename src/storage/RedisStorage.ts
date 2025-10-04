@@ -128,6 +128,36 @@ export class RedisStorage implements Storage {
     }
   }
 
+  private async scan(options: {
+    regex?: RegExp;
+    match?: string;
+  }): Promise<string[]> {
+    try {
+      const { regex, match } = options;
+      let cursor = "0";
+      const found: string[] = [];
+      do {
+        const res = await this.client.scan(cursor, {
+          MATCH: match,
+        });
+
+        cursor = res.cursor;
+        if (regex) {
+          res.keys.forEach((k) => {
+            if (regex.test(k)) found.push(k);
+          });
+        } else {
+          found.push(...res.keys);
+        }
+      } while (cursor !== "0");
+
+      return found;
+    } catch (e) {
+      console.error(e);
+      throw new Error("Failed to fetch from database.");
+    }
+  }
+
   private async getDel(key: string): Promise<string | null> {
     try {
       const type = await this.client.type(key);
@@ -212,6 +242,17 @@ export class RedisStorage implements Storage {
     if (!res) return { success: false };
 
     return { success: true };
+  }
+
+  public async getAllGatekept() {
+    const match = "guilds:*:commands:gatekeeper:channelsWatched";
+    const keys = await this.scan({ match: match });
+    const vals = await this.mGet(keys);
+    const pairs = keys.map((k, i) => ({
+      guildId: k.split(":")[1],
+      channelId: vals[i],
+    }));
+    return pairs;
   }
 
   public async destroy(): Promise<void> {
