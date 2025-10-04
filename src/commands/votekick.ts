@@ -17,8 +17,7 @@ import {
   CommandContextRequire,
 } from "@types-local/commands";
 import { ConfigType } from "@config";
-import { catchAllInteractionReply, isVoteEmoji } from "@utils";
-import { EmojiEnum } from "@types-local/util";
+import { catchAllInteractionReply, isVoteEmoji, EmojiEnum } from "@utils";
 
 type VoteContext = {
   reaction: MessageReaction;

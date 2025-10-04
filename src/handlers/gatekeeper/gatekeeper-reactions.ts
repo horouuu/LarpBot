@@ -1,6 +1,5 @@
 import { GatekeeperContext } from "@commands/gatekeeper";
-import { EmojiEnum } from "@types-local/util";
-import { isVoteEmoji } from "@utils";
+import { EmojiEnum, isVoteEmoji } from "@utils";
 
 import {
   DiscordAPIError,

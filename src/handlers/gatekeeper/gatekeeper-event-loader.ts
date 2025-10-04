@@ -1,5 +1,5 @@
 import { HandlerContext } from "@types-local/global";
-import { createGatekeeperCollectors } from "./gatekeeper-reactions";
+import { createGatekeeperCollectors } from "@handlers/gatekeeper/gatekeeper-reactions.js";
 import { TextChannel } from "discord.js";
 
 export async function gatekeeperEventLoader(ctx: HandlerContext) {

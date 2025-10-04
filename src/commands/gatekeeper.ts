@@ -4,8 +4,7 @@ import {
   CommandContext,
   CommandContextRequire,
 } from "@types-local/commands";
-import { EmojiEnum } from "@types-local/util";
-import { catchAllInteractionReply, isVoteEmoji } from "@utils";
+import { catchAllInteractionReply, isVoteEmoji, EmojiEnum } from "@utils";
 import {
   ChannelType,
   DiscordAPIError,

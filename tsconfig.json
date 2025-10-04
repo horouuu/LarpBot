@@ -16,7 +16,7 @@
       "@types-local/global": ["types/global.d.ts"],
       "@config": ["utils/config.ts"],
       "@utils": ["utils/utils.ts"],
-      "@handlers/*": ["handlers/*.ts"],
+      "@handlers/*": ["handlers/*"],
       "@storage": ["storage/Storage.ts"],
       "@redis-storage": ["storage/RedisStorage.ts"],
       "@/*": ["*"]
