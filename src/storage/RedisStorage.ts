@@ -8,8 +8,16 @@ import {
 } from "@storage";
 import { AtLeastOne, OrNullEntries } from "@types-local/util";
 
-const REDIS_NAMESPACE_GUILDS = "guilds";
-const REDIS_NAMESPACE_CONFIGS = "configs";
+enum RedisNamespaces {
+  GUILDS = "guilds",
+  CONFIGS = "configs",
+  COMMANDS = "commands",
+}
+
+enum RedisTypes {
+  STRING = "string",
+  SET = "set",
+}
 
 type RetrievedEntry<K extends PersistedKey = PersistedKey> = readonly [
   K,
