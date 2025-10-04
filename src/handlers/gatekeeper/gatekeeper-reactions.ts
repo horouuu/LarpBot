@@ -82,7 +82,18 @@ export async function gatekeeperReactionHandler(
         await reaction.message.react(EmojiEnum.EMOJI_BYE);
       } else {
         if (!member) return;
-        await member.roles.add(config.memberRoleId);
+        const guildMemberRole = await storage.checkGuildMemberRole(
+          member.guild.id
+        );
+
+        if (!guildMemberRole) {
+          await reaction.message.reply(
+            "Your server does not have a member role configured.\nUse `/config set memberRole` to configure it."
+          );
+          return;
+        }
+
+        await member.roles.add(guildMemberRole);
         await reaction.message.react(EmojiEnum.EMOJI_WELCOME);
       }
       collector.stop();

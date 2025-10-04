@@ -212,6 +212,24 @@ async function handleDelist(ctx: GatekeeperContext) {
   }
 }
 
+async function handleCheckMemberRole(ctx: GatekeeperContext): Promise<boolean> {
+  const { interaction, storage } = ctx;
+  if (!interaction.guildId)
+    throw new Error("[gatekeep/check member role]: Unable to find guildId.");
+  const guildMemberRole = await storage.checkGuildMemberRole(
+    interaction.guildId
+  );
+
+  if (!guildMemberRole) {
+    await interaction.reply(
+      "Your server does not have a member role configured. One is required to register gatekeeper.\nUse `/config set memberRole` to configure it."
+    );
+    return false;
+  }
+
+  return true;
+}
+
 async function execute(commandCtx: GatekeeperContext): Promise<void> {
   const { interaction } = commandCtx;
   if (!interaction.isChatInputCommand()) return;
@@ -220,6 +238,8 @@ async function execute(commandCtx: GatekeeperContext): Promise<void> {
   try {
     switch (sc) {
       case GatekeeperEnum.REGISTER:
+        const set = await handleCheckMemberRole(commandCtx);
+        if (!set) break;
         await handleRegister(commandCtx);
         break;
       case GatekeeperEnum.VIEW:
