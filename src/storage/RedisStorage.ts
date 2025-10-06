@@ -280,6 +280,26 @@ export class RedisStorage implements Storage {
     }
   }
 
+  public async setMotd(guildId: string, msg: string) {
+    const key = `guilds:${guildId}:commands:motd:message`;
+    const replaced = await this._get(key);
+    await this._set(key, msg);
+
+    return replaced;
+  }
+
+  public async getMotd(guildId: string) {
+    const key = `guilds:${guildId}:commands:motd:message`;
+    const motd = await this._get(key);
+
+    return motd;
+  }
+
+  public async clearMotd(guildId: string) {
+    const key = `guilds:${guildId}:commands:motd:message`;
+    await this._getDel(key);
+  }
+
   public async destroy(): Promise<void> {
     await this.client.close();
   }
