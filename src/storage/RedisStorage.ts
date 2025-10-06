@@ -54,7 +54,7 @@ export class RedisStorage implements Storage {
     return new RedisStorage(client);
   }
 
-  private async sAdd(key: string, members: string | string[]): Promise<void> {
+  private async _sAdd(key: string, members: string | string[]): Promise<void> {
     try {
       const type = await this.client.type(key);
       if (type !== RedisTypes.SET && type !== RedisTypes.NONE)
@@ -69,7 +69,7 @@ export class RedisStorage implements Storage {
     }
   }
 
-  public async sGet(key: string): Promise<string[]> {
+  public async _sGet(key: string): Promise<string[]> {
     try {
       const type = await this.client.type(key);
       if (type !== RedisTypes.SET)
@@ -83,7 +83,7 @@ export class RedisStorage implements Storage {
     }
   }
 
-  private async sRem(key: string, members: string): Promise<number> {
+  private async _sRem(key: string, members: string): Promise<number> {
     try {
       const type = await this.client.type(key);
       if (type !== RedisTypes.SET)
@@ -98,7 +98,7 @@ export class RedisStorage implements Storage {
     }
   }
 
-  private async set(key: string, value: string): Promise<void> {
+  private async _set(key: string, value: string): Promise<void> {
     try {
       const type = await this.client.type(key);
       if (type !== RedisTypes.STRING && type !== RedisTypes.NONE)
@@ -112,7 +112,7 @@ export class RedisStorage implements Storage {
     }
   }
 
-  private async get(key: string): Promise<string | null> {
+  private async _get(key: string): Promise<string | null> {
     try {
       const type = await this.client.type(key);
       if (type !== RedisTypes.STRING && type !== RedisTypes.NONE) {
@@ -128,7 +128,7 @@ export class RedisStorage implements Storage {
     }
   }
 
-  private async scan(options: {
+  private async _scan(options: {
     regex?: RegExp;
     match?: string;
   }): Promise<string[]> {
@@ -158,7 +158,7 @@ export class RedisStorage implements Storage {
     }
   }
 
-  private async getDel(key: string): Promise<string | null> {
+  private async _getDel(key: string): Promise<string | null> {
     try {
       const type = await this.client.type(key);
       if (type !== RedisTypes.STRING && type !== RedisTypes.NONE) {
@@ -174,7 +174,7 @@ export class RedisStorage implements Storage {
     }
   }
 
-  private async mGet(keys: string[]): Promise<string[]> {
+  private async _mGet(keys: string[]): Promise<string[]> {
     try {
       return (await this.client.mGet(keys)) as string[];
     } catch (e) {
@@ -191,7 +191,7 @@ export class RedisStorage implements Storage {
     for (const key of Object.keys(config) as T[]) {
       const value = config[key];
       const redisKey: string = `${RedisNamespaces.GUILDS}:${guildId}:${RedisNamespaces.CONFIGS}:${key}`;
-      await this.set(redisKey, value.toString());
+      await this._set(redisKey, value.toString());
     }
   }
 
@@ -203,7 +203,7 @@ export class RedisStorage implements Storage {
         `${RedisNamespaces.GUILDS}:${guildId}:${RedisNamespaces.CONFIGS}:${configPrefix}`
     );
 
-    const retrieved = await this.mGet(keys);
+    const retrieved = await this._mGet(keys);
     const entries: RetrievedEntry[] = retrieved.flatMap(
       (r, i): RetrievedEntry[] => {
         const key = persistedConfigs[i];
@@ -229,19 +229,19 @@ export class RedisStorage implements Storage {
     if (stored && !force) {
       return { success: false, watching: stored };
     } else {
-      this.set(key, channelId);
+      this._set(key, channelId);
       return { success: true as true };
     }
   }
 
   public async chGetGatekeeper(guildId: string): Promise<string | null> {
     const key = `${RedisNamespaces.GUILDS}:${guildId}:${RedisNamespaces.COMMANDS}:gatekeeper:channelsWatched`;
-    return await this.get(key);
+    return await this._get(key);
   }
 
   public async chDelGatekeeper(guildId: string) {
     const key = `${RedisNamespaces.GUILDS}:${guildId}:${RedisNamespaces.COMMANDS}:gatekeeper:channelsWatched`;
-    const res = await this.getDel(key);
+    const res = await this._getDel(key);
     if (!res) return { success: false as false };
 
     return { success: true, delisted: res };
@@ -249,9 +249,9 @@ export class RedisStorage implements Storage {
 
   public async getAllGatekept() {
     const match = "guilds:*:commands:gatekeeper:channelsWatched";
-    const keys = await this.scan({ match: match });
+    const keys = await this._scan({ match: match });
     if (keys.length == 0) return [];
-    const vals = await this.mGet(keys);
+    const vals = await this._mGet(keys);
     const pairs = keys.map((k, i) => ({
       guildId: k.split(":")[1],
       channelId: vals[i],
@@ -261,7 +261,7 @@ export class RedisStorage implements Storage {
 
   public async checkGuildMemberRole(guildId: string) {
     const key = `${RedisNamespaces.GUILDS}:${guildId}:configs:memberRole`;
-    const memberId = await this.get(key);
+    const memberId = await this._get(key);
     return memberId;
   }
 
@@ -271,13 +271,33 @@ export class RedisStorage implements Storage {
     force = false
   ) {
     const key = `${RedisNamespaces.GUILDS}:${guildId}:memberRole`;
-    const current = await this.get(key);
+    const current = await this._get(key);
     if (current && !force) {
       return { success: false, current: current };
     } else {
-      await this.set(key, roleId);
+      await this._set(key, roleId);
       return { success: true as true };
     }
+  }
+
+  public async setMotd(guildId: string, msg: string) {
+    const key = `guilds:${guildId}:commands:motd:message`;
+    const replaced = await this._get(key);
+    await this._set(key, msg);
+
+    return replaced;
+  }
+
+  public async getMotd(guildId: string) {
+    const key = `guilds:${guildId}:commands:motd:message`;
+    const motd = await this._get(key);
+
+    return motd;
+  }
+
+  public async clearMotd(guildId: string) {
+    const key = `guilds:${guildId}:commands:motd:message`;
+    await this._getDel(key);
   }
 
   public async destroy(): Promise<void> {

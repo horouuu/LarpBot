@@ -45,6 +45,12 @@ export abstract class Storage {
     guildId: string,
     roleId: string
   ): Promise<FailureWithReturn<"current">>;
+
+  abstract setMotd(guildId: string, msg: string): Promise<string | null>;
+
+  abstract getMotd(guildId: string): Promise<string | null>;
+
+  abstract clearMotd(guildId: string): Promise<void>;
 }
 
 export type { PersistedKey, PersistedConfigs };
