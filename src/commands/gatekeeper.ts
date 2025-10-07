@@ -11,7 +11,6 @@ import {
   Guild,
   MessageReaction,
   PermissionFlagsBits,
-  PermissionsBitField,
   ReactionCollector,
   SlashCommandBuilder,
   TextChannel,
