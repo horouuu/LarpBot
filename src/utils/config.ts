@@ -15,20 +15,12 @@ if (!process.env.ACTION_THRESHOLD)
 const EnvSchema = z.object({
   TOKEN: z.string().min(1, `Missing TOKEN value in ${variableStore}`),
   APP_ID: z.string().min(1, `Missing APP_ID value in ${variableStore}`),
-  TARGET_GUILD_ID: z
-    .string()
-    .min(1, `Missing TARGET_GUILD_ID in ${variableStore}`),
-  TARGET_CHANNEL_ID: z
-    .string()
-    .min(1, `Missing TARGET_CHANNEL_ID in ${variableStore}`),
   ACTION_THRESHOLD: z.coerce.number<number>().int().positive().default(3),
   REDIS_URL: z.string().min(1, `Missing REDIS_URL in ${variableStore}`),
 });
 const configVars = [
   "TOKEN",
   "APP_ID",
-  "TARGET_GUILD_ID",
-  "TARGET_CHANNEL_ID",
   "ACTION_THRESHOLD",
   "REDIS_URL",
 ] as const;
