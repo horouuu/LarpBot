@@ -1,4 +1,7 @@
-import { ApplicationCommandOptionType, Role } from "discord.js";
+import {
+  ApplicationCommandOptionType,
+  PermissionFlagsBits,
+} from "discord.js";
 import {
   Command,
   CommandContext,
@@ -6,7 +9,6 @@ import {
 } from "@types-local/commands";
 import { PersistedConfigs, PersistedKey, Storage } from "@storage";
 import { catchAllInteractionReply, isPersistedKey, snakeToCamel } from "@utils";
-import { AtLeastOne } from "@types-local/util";
 
 enum ConfigCommandOptions {
   VIEW = "view",
@@ -70,6 +72,7 @@ async function handleSet(setCtx: ConfigCommandContext) {
 const config = {
   name: "config",
   description: "View or change configs for this server.",
+  default_member_permissions: PermissionFlagsBits.Administrator.toString(),
   options: [
     {
       type: ApplicationCommandOptionType.Subcommand,

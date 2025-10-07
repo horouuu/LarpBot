@@ -10,6 +10,8 @@ import {
   DiscordAPIError,
   Guild,
   MessageReaction,
+  PermissionFlagsBits,
+  PermissionsBitField,
   ReactionCollector,
   SlashCommandBuilder,
   TextChannel,
@@ -34,6 +36,7 @@ export type GatekeeperContext = CommandContextRequire<
 const gatekeeperData = new SlashCommandBuilder()
   .setName(GatekeeperEnum.GK_CMD_NAME)
   .setDescription("Configures gatekeeper for this server.")
+  .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
   .addSubcommand((opt) =>
     opt
       .setName(GatekeeperEnum.REGISTER)
