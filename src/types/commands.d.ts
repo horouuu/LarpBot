@@ -17,10 +17,8 @@ export type CommandContextRequire<
   Keys extends keyof Ctx = never
 > = Omit<Ctx, Keys> & Required<Pick<Ctx, Keys>>;
 
-export interface Command {
-  name: string;
-  description: string;
-  options?: ApplicationCommandOption[];
+export interface Command
+  extends RESTPostAPIChatInputApplicationCommandsJSONBody {
   execute(commandCtx: CommandContextRequire<CommandContext>): Promise<void>;
   execute(commandCtx: CommandContext): Promise<void>;
 }
