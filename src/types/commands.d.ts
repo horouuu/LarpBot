@@ -2,8 +2,8 @@ import { Storage } from "@storage";
 import { ConfigType } from "@config";
 import {
   CacheType,
-  ApplicationCommandOption,
   ChatInputCommandInteraction,
+  RESTPostAPIChatInputApplicationCommandsJSONBody,
 } from "discord.js";
 
 export type CommandContext = {
