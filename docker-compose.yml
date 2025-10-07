@@ -4,14 +4,13 @@ services:
       dockerfile: ./Dockerfile
     container_name: larpbot
     restart: unless-stopped
+    ports:
+      - "8081:80"
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:
       TOKEN: "${TOKEN}"
       APP_ID: "${APP_ID}"
-      TARGET_GUILD_ID: "${TARGET_GUILD_ID}"
-      TARGET_CHANNEL_ID: "${TARGET_CHANNEL_ID}"
-      MEMBER_ROLE_ID: "${MEMBER_ROLE_ID}"
       ACTION_THRESHOLD: "${ACTION_THRESHOLD:-3}"
       REDIS_URL: "${REDIS_URL}"
 
