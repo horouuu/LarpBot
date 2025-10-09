@@ -10,6 +10,7 @@ import {
   DiscordAPIError,
   RESTJSONErrorCodes,
   ChatInputCommandInteraction,
+  SlashCommandBuilder,
 } from "discord.js";
 import {
   Command,
@@ -160,24 +161,29 @@ function removeHandler(voteCtx: VoteContext): void {
   printStatus(target, user, total, type, true);
 }
 
+const votekickData = new SlashCommandBuilder()
+  .setName("vote")
+  .setDescription("Starts a vote.")
+  .addSubcommand((opt) =>
+    opt
+      .setName("kick")
+      .setDescription("Starts a vote to kick a member.")
+      .addUserOption((opt) =>
+        opt
+          .setName("target")
+          .setDescription("Target of the vote.")
+          .setRequired(true)
+      )
+      .addBooleanOption((opt) =>
+        opt
+          .setName("ban")
+          .setDescription("Changes the result of the vote into a ban.")
+          .setRequired(false)
+      )
+  );
+
 const votekick = {
-  name: "votekick",
-  description:
-    "Starts a vote to kick a member. Requires 3 votes excluding the bot by default.",
-  options: [
-    {
-      type: ApplicationCommandOptionType.User,
-      name: "target",
-      description: "Votekick target",
-      required: true,
-    },
-    {
-      type: ApplicationCommandOptionType.Boolean,
-      name: "ban",
-      description: "Bans the target instead of kicking them.",
-      required: false,
-    },
-  ],
+  ...votekickData.toJSON(),
   execute: async (
     commandCtx: CommandContextRequire<CommandContext, "config" | "storage">
   ) => {
