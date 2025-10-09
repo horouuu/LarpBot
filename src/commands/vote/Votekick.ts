@@ -29,20 +29,31 @@ export class Votekick extends VoteSubCommand<User, "kick" | "ban"> {
   ) {
     const { interaction } = ctx;
     const target = interaction.options.getUser("target");
-    if (!target) throw new Error("Missing input: target.");
+    if (!target) {
+      await interaction.editReply("Missing input: target.");
+      return;
+    }
 
-    if (!interaction.guild)
-      throw new Error("Unable to find guild of interaction.");
+    if (!interaction.guild) {
+      await interaction.editReply("Unable to find guild of interaction.");
+      return;
+    }
+
     const member = await interaction.guild.members.fetch(target.id);
     if (!member) {
-      throw new Error("Member no longer in server.");
+      await interaction.editReply("Member no longer in server.");
+      return;
     } else if (!member.kickable) {
-      throw new Error("I don't have the permissions to kick that user!");
+      await interaction.editReply(
+        "I don't have the permissions to kick that user!"
+      );
+      return;
     }
 
     const ban = interaction.options.getBoolean("ban");
     this._action = ban ? "ban" : "kick";
 
+    await interaction.editReply(this._getPrompt());
     await this._startVote(ctx);
   }
 

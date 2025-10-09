@@ -34,11 +34,11 @@ export abstract class VoteSubCommand<TTarget, TAction extends string> {
   }
 
   protected _getSuccessMsg(forVotes: number, againstVotes?: number): string {
-    return `Vote to ${this._action} member ${this._target} passed with ${forVotes} user(s) for the motion.`;
+    return `${EmojiEnum.EMOJI_AYE} Vote to ${this._action} member ${this._target} passed with ${forVotes} user(s) for the motion ${EmojiEnum.EMOJI_AYE}`;
   }
 
   protected _getFailureMsg(againstVotes: number, forVotes?: number): string {
-    return `Vote to ${this._action} member ${this._target} failed with ${againstVotes} user(s) against the motion.`;
+    return `${EmojiEnum.EMOJI_NAY} Vote to ${this._action} member ${this._target} failed with ${againstVotes} user(s) against the motion ${EmojiEnum.EMOJI_NAY}`;
   }
 
   protected _getExpiryMessage() {
