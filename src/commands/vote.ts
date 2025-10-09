@@ -16,7 +16,7 @@ enum VoteEnum {
   VOTE_KICK = "kick",
 }
 
-const votekickData = new SlashCommandBuilder()
+const voteData = new SlashCommandBuilder()
   .setName("vote")
   .setDescription("Starts a vote.")
   .addSubcommand((opt) =>
@@ -37,8 +37,8 @@ const votekickData = new SlashCommandBuilder()
       )
   );
 
-const votekick = {
-  ...votekickData.toJSON(),
+const vote = {
+  ...voteData.toJSON(),
   execute: async (
     commandCtx: CommandContextRequire<CommandContext, "config" | "storage">
   ) => {
@@ -72,4 +72,4 @@ const votekick = {
   },
 } satisfies Command;
 
-export { votekick };
+export { vote };
