@@ -1,4 +1,5 @@
 import { Command, CommandContext } from "@types-local/commands";
+import { MessageFlags } from "discord.js";
 
 const ping = {
   name: "ping",
@@ -8,7 +9,10 @@ const ping = {
     if (!interaction.isChatInputCommand()) return;
 
     try {
-      await interaction.reply("Pong!");
+      await interaction.reply({
+        content: "Pong!",
+        flags: MessageFlags.Ephemeral,
+      });
     } catch (e) {}
   },
 } satisfies Command;
