@@ -1,5 +1,5 @@
 import { CommandContext } from "@types-local/commands";
-import { VoteExecutionContext, VoteSubCommand } from "./Vote";
+import { VoteExecutionContext, VoteSubCommand } from "./Vote.js";
 import {
   Guild,
   InteractionCallbackResponse,
@@ -40,7 +40,7 @@ export class Votekick extends VoteSubCommand<User, "kick" | "ban"> {
       return;
     } else if (!member.kickable) {
       await interaction.editReply(
-        "I don't have the permissions to kick that user!"
+        `I don't have the permissions to ${this._action} that user!`
       );
       return;
     }
@@ -54,26 +54,30 @@ export class Votekick extends VoteSubCommand<User, "kick" | "ban"> {
     try {
       const user = this._target;
       const member = await interaction.guild?.members.fetch(user.id);
+      if (!member) {
+        await interaction.editReply(
+          `Failed to find user ${user.id} in the server.`
+        );
+        return;
+      }
       const ban = this._action === "ban";
-      const condition = ban ? member?.bannable : member?.kickable;
+      const condition = ban ? member.bannable : member.kickable;
 
       if (condition) {
         if (ban) {
-          await member?.ban({
+          await member.ban({
             reason: `Vote-banned by ${total} other user(s)`,
           });
         } else {
-          await member?.kick(`Vote-kicked by ${total} other user(s)`);
+          await member.kick(`Vote-kicked by ${total} other user(s)`);
         }
 
         console.log(
           `Successfully ${ban ? "banned" : "kicked"} member ${
             user.username
-          } | ${member?.id} ${
-            member?.nickname
-              ? `(${member?.nickname})`
-              : `(${member?.displayName})`
-          } from guild ${member?.guild.name} (${member?.guild.id})`
+          } | ${member.id} ${
+            member.nickname ? `(${member.nickname})` : `(${member.displayName})`
+          } from guild ${member.guild.name} (${member.guild.id})`
         );
 
         const msg = `Vote to ${
@@ -86,7 +90,9 @@ export class Votekick extends VoteSubCommand<User, "kick" | "ban"> {
         }
       } else {
         await responseRef.resource?.message?.reply(
-          `I don't have the permissions to ${ban ? "ban" : "kick"} that user!`
+          `I no longer have the permissions to ${
+            ban ? "ban" : "kick"
+          } that user!`
         );
       }
     } catch (e) {

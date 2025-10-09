@@ -10,7 +10,7 @@ import {
 } from "@types-local/commands";
 
 import { catchAllInteractionReply } from "@utils";
-import { Votekick } from "./vote/Votekick";
+import { Votekick } from "./vote/Votekick.js";
 
 enum VoteEnum {
   VOTE_KICK = "kick",
