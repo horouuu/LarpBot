@@ -9,11 +9,6 @@ import {
 import { EmojiEnum } from "@utils";
 
 export class Votekick extends VoteSubCommand<User, "kick" | "ban"> {
-  constructor(target: User, ban: boolean = false) {
-    const act = ban ? "ban" : "kick";
-    super(target, act);
-  }
-
   public start = async (
     ctx: Required<CommandContext> & {
       responseRef: InteractionCallbackResponse<boolean>;
@@ -49,9 +44,6 @@ export class Votekick extends VoteSubCommand<User, "kick" | "ban"> {
       );
       return;
     }
-
-    const ban = interaction.options.getBoolean("ban");
-    this._action = ban ? "ban" : "kick";
 
     await interaction.editReply(this._getPrompt());
     await this._startVote(ctx);
