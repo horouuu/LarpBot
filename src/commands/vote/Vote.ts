@@ -1,10 +1,8 @@
-import { Command, CommandContext } from "@types-local/commands";
+import { CommandContext } from "@types-local/commands";
 import { isVoteEmoji, EmojiEnum } from "@utils";
 import {
   Guild,
-  GuildMember,
   InteractionCallbackResponse,
-  Message,
   MessageReaction,
   ReactionCollector,
   User,
