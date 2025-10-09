@@ -1,6 +1,7 @@
 import { CommandContext } from "@types-local/commands";
 import { VoteSubCommand } from "./Vote";
-import { MessageReaction, User } from "discord.js";
+import { Guild, GuildMember, MessageReaction, User } from "discord.js";
+import { EmojiEnum } from "@utils";
 
 export class Votekick extends VoteSubCommand<User, "kick" | "ban"> {
   async prepareContext(ctx: CommandContext) {
@@ -59,13 +60,46 @@ export class Votekick extends VoteSubCommand<User, "kick" | "ban"> {
       console.error(e);
     }
   }
-  override getVoteTotal(reaction: MessageReaction, target: User): number {
+
+  protected override _getVoteTotal(
+    reaction: MessageReaction,
+    target: User
+  ): number {
     const targetInVote = reaction.users.cache.has(target.id) ? 1 : 0;
     const botsInVote = reaction.users.cache.filter(
       (user: User) => user.bot
     ).size;
     const total = reaction.count - targetInVote - botsInVote; // deduct all bots and target's votes
     return total;
+  }
+
+  protected override async _logFailure(target: User, guild: Guild) {
+    const member = await guild.members.fetch(target.id);
+    console.log(
+      `Vote against member ${target.username} | ${member.id} ${
+        member.nickname ? `(${member.nickname})` : `(${member.displayName})`
+      } failed in guild ${member.guild.name} (${member.guild.id})`
+    );
+  }
+
+  protected override _printStatus(
+    target: User,
+    reactor: User,
+    total: number,
+    type: EmojiEnum,
+    removed: boolean = false
+  ): void {
+    console.log(
+      `Vote against ${target.username} | ${type}: ${total} (${
+        target.id === reactor.id
+          ? "<>"
+          : reactor.bot
+          ? "!!"
+          : removed
+          ? "-"
+          : "+"
+      } ${reactor.username})`
+    );
   }
 }
 

@@ -1,6 +1,8 @@
 import { CommandContext } from "@types-local/commands";
 import { isVoteEmoji, EmojiEnum } from "@utils";
 import {
+  Guild,
+  GuildMember,
   InteractionCallbackResponse,
   Message,
   MessageReaction,
@@ -36,11 +38,63 @@ export abstract class VoteSubCommand<TTarget, TAction extends string> {
     return `Vote to ${this._action} member ${this._target} failed with ${againstVotes} user(s) against the motion.`;
   }
 
+  protected async _logFailure(target: TTarget, guild: Guild): Promise<void> {
+    console.log(`Vote against target ${target} failed!`);
+  }
+
+  protected async _collectHandler(
+    voteCtx: VoteContext<TTarget>
+  ): Promise<undefined> {
+    const {
+      interaction,
+      storage,
+      config,
+      reactor,
+      reaction,
+      target,
+      reactionCollector,
+    } = voteCtx;
+    if (!interaction.guild) throw new Error("Error retrieving guild.");
+    const persistedConfigs = await storage.retrieveConfigs(
+      interaction.guild.id
+    );
+    const actionThreshold =
+      persistedConfigs.actionThreshold ?? config.actionThreshold;
+
+    if (!isVoteEmoji(reaction.emoji.name)) return;
+    const type: EmojiEnum = reaction.emoji.name;
+    const total = this._getVoteTotal(reaction, target);
+    this._printStatus(target, reactor, total, type, true);
+
+    // check votes
+    if (total >= actionThreshold) {
+      if (reaction.emoji.name === EmojiEnum.EMOJI_AYE) {
+      } else if (reaction.emoji.name === EmojiEnum.EMOJI_NAY) {
+        await this._logFailure(this._target, interaction.guild);
+        interaction
+          .editReply(this._getFailureMsg(total))
+          .catch((e) => console.error(e));
+      }
+      reactionCollector.stop();
+    }
+  }
+
   abstract prepareContext(ctx: CommandContext): Promise<void> | void;
 
   abstract execute(target: TTarget): Promise<void> | void;
 
-  abstract getVoteTotal(reaction: MessageReaction, target: TTarget): number;
+  protected abstract _getVoteTotal(
+    reaction: MessageReaction,
+    target: TTarget
+  ): number;
+
+  protected abstract _printStatus(
+    target: TTarget,
+    reactor: User,
+    total: number,
+    type: EmojiEnum,
+    removed: boolean
+  ): Promise<void> | void;
 
   async startVote({
     response,
@@ -82,61 +136,10 @@ export abstract class VoteSubCommand<TTarget, TAction extends string> {
   }
 }
 
-function printStatus(
-  target: User,
-  user: User,
-  total: number,
-  type: EmojiEnum,
-  removed: boolean = false
-): void {
-  console.log(
-    `Vote against ${target.username} | ${type}: ${total} (${
-      target.id === user.id ? "<>" : user.bot ? "!!" : removed ? "-" : "+"
-    } ${user.username})`
-  );
-}
-
 function removeHandler(voteCtx: VoteContext): void {
   const { reaction, user, target } = voteCtx;
   if (!isVoteEmoji(reaction.emoji.name)) return;
   const type: EmojiEnum = reaction.emoji.name;
   const total = getVoteTotal(reaction, target);
   printStatus(target, user, total, type, true);
-}
-
-async function collectHandler<TTarget, TAction extends string>(
-  voteInstance: VoteSubCommand<TTarget, TAction>,
-  voteCtx: VoteContext<TTarget>
-): Promise<undefined> {
-  const { interaction, storage, config, reactor, reaction, target } = voteCtx;
-  if (!interaction.guild) throw new Error("Error retrieving guild.");
-  const persistedConfigs = await storage.retrieveConfigs(interaction.guild.id);
-  const actionThreshold =
-    persistedConfigs.actionThreshold ?? config.actionThreshold;
-
-  if (!isVoteEmoji(reaction.emoji.name)) return;
-  const type: EmojiEnum = reaction.emoji.name;
-  const total = getVoteTotal(reaction, target);
-  const ban = interaction.options.getBoolean("ban");
-  printStatus(target, reactor, total, type);
-
-  // check votes
-  if (total >= actionThreshold) {
-    if (reaction.emoji.name === EmojiEnum.EMOJI_AYE) {
-    } else if (reaction.emoji.name === EmojiEnum.EMOJI_NAY) {
-      console.log(
-        `Vote against member ${target.username} | ${member.id} ${
-          member.nickname ? `(${member.nickname})` : `(${member.displayName})`
-        } failed in guild ${member.guild.name} (${member.guild.id})`
-      );
-      interaction
-        .editReply(
-          `Vote to ${
-            ban ? "ban" : "kick"
-          } ${target} failed with ${total} user(s) against the motion.`
-        )
-        .catch((e) => console.error(e));
-    }
-    reactionCollector.stop();
-  }
 }
