@@ -28,7 +28,10 @@ export abstract class VoteSubCommand<TTarget, TAction extends string> {
   }
 
   protected _getPrompt(): string {
-    return `Vote to ${this._action} ${this._target}?`;
+    const formattedAction =
+      this._action.toLowerCase().charAt(0).toUpperCase() +
+      this._action.slice(1);
+    return `${formattedAction} ${this._target}?`;
   }
 
   protected _getSuccessMsg(forVotes: number, againstVotes?: number): string {
