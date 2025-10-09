@@ -15,6 +15,7 @@ export async function loadCommands(): Promise<CommandsMap> {
   const files = fs
     .readdirSync(currentPath, { recursive: true, withFileTypes: true })
     .filter((f) => f.isFile())
+    .filter((f) => !/[A-Z_]/.test(f.name.charAt(0)))
     .filter((f) => f.name !== `index${extension}`)
     .filter((f) => f.name.endsWith(extension));
 
