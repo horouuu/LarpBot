@@ -18,12 +18,14 @@ import {
 } from "@types-local/commands";
 import { ConfigType } from "@config";
 import { catchAllInteractionReply, isVoteEmoji, EmojiEnum } from "@utils";
+import { Storage } from "@storage";
 
 type VoteContext = {
   reaction: MessageReaction;
   user: User;
   member: GuildMember;
   target: User;
+  storage: Storage;
   config: ConfigType;
   response: InteractionCallbackResponse;
   reactionCollector: ReactionCollector;
@@ -106,11 +108,14 @@ async function collectHandler(
     member,
     target,
     config,
+    storage,
     response,
     reactionCollector,
     interaction,
   } = voteCtx;
-  const actionThreshold = config.actionThreshold;
+  const persistedConfigs = await storage.retrieveConfigs(member.guild.id);
+  const actionThreshold =
+    persistedConfigs.actionThreshold ?? config.actionThreshold;
 
   if (!isVoteEmoji(reaction.emoji.name)) return;
   const type: EmojiEnum = reaction.emoji.name;
@@ -174,9 +179,9 @@ const votekick = {
     },
   ],
   execute: async (
-    commandCtx: CommandContextRequire<CommandContext, "config">
+    commandCtx: CommandContextRequire<CommandContext, "config" | "storage">
   ) => {
-    const { interaction, config } = commandCtx;
+    const { interaction, config, storage } = commandCtx;
     if (!interaction.isChatInputCommand()) return;
     if (!config) throw new Error("Config missing for command: Votekick");
     const response = await interaction.deferReply({ withResponse: true });
@@ -228,6 +233,7 @@ const votekick = {
         config,
         response,
         reactionCollector,
+        storage,
       };
 
       reactionCollector.on(
