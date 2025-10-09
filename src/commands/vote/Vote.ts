@@ -1,4 +1,4 @@
-import { CommandContext } from "@types-local/commands";
+import { Command, CommandContext } from "@types-local/commands";
 import { isVoteEmoji, EmojiEnum } from "@utils";
 import {
   Guild,
@@ -10,18 +10,21 @@ import {
   User,
 } from "discord.js";
 
-type VoteContext<TTarget> = {
+export type VoteContext<TTarget> = {
   reaction: MessageReaction;
   reactor: User;
   target: TTarget;
-  response: InteractionCallbackResponse;
+  responseRef: InteractionCallbackResponse;
   reactionCollector: ReactionCollector;
 } & Required<CommandContext>;
 
+export type VoteExecutionContext<TTarget> = VoteContext<TTarget> & {
+  total: number;
+};
 export abstract class VoteSubCommand<TTarget, TAction extends string> {
   protected _target: TTarget;
   protected _action: TAction;
-  constructor(action: TAction, target: TTarget) {
+  public constructor(target: TTarget, action: TAction) {
     this._target = target;
     this._action = action;
   }
@@ -38,13 +41,17 @@ export abstract class VoteSubCommand<TTarget, TAction extends string> {
     return `Vote to ${this._action} member ${this._target} failed with ${againstVotes} user(s) against the motion.`;
   }
 
+  protected _getExpiryMessage() {
+    return `Vote on ${this._target} expired.`;
+  }
+
   protected async _logFailure(target: TTarget, guild: Guild): Promise<void> {
     console.log(`Vote against target ${target} failed!`);
   }
 
-  protected async _collectHandler(
+  protected collectHandler = async (
     voteCtx: VoteContext<TTarget>
-  ): Promise<undefined> {
+  ): Promise<undefined> => {
     const {
       interaction,
       storage,
@@ -64,11 +71,12 @@ export abstract class VoteSubCommand<TTarget, TAction extends string> {
     if (!isVoteEmoji(reaction.emoji.name)) return;
     const type: EmojiEnum = reaction.emoji.name;
     const total = this._getVoteTotal(reaction, target);
-    this._printStatus(target, reactor, total, type, true);
+    this._printStatus(target, reactor, total, type, false);
 
     // check votes
     if (total >= actionThreshold) {
       if (reaction.emoji.name === EmojiEnum.EMOJI_AYE) {
+        this._execute({ ...voteCtx, total: total });
       } else if (reaction.emoji.name === EmojiEnum.EMOJI_NAY) {
         await this._logFailure(this._target, interaction.guild);
         interaction
@@ -77,11 +85,27 @@ export abstract class VoteSubCommand<TTarget, TAction extends string> {
       }
       reactionCollector.stop();
     }
-  }
+  };
 
-  abstract prepareContext(ctx: CommandContext): Promise<void> | void;
+  protected removeHandler = (voteCtx: VoteContext<TTarget>): void => {
+    const { reaction, reactor, target } = voteCtx;
+    if (!isVoteEmoji(reaction.emoji.name)) return;
+    const type: EmojiEnum = reaction.emoji.name;
+    const total = this._getVoteTotal(reaction, target);
+    this._printStatus(target, reactor, total, type, true);
+  };
 
-  abstract execute(target: TTarget): Promise<void> | void;
+  protected abstract start: (
+    ctx: Required<CommandContext> & {
+      responseRef: InteractionCallbackResponse<boolean>;
+    }
+  ) => Promise<void>;
+
+  protected abstract _prepareContext(ctx: CommandContext): Promise<void> | void;
+
+  protected abstract _execute(
+    ctx: VoteExecutionContext<TTarget>
+  ): Promise<void> | void;
 
   protected abstract _getVoteTotal(
     reaction: MessageReaction,
@@ -96,32 +120,30 @@ export abstract class VoteSubCommand<TTarget, TAction extends string> {
     removed: boolean
   ): Promise<void> | void;
 
-  async startVote({
-    response,
-    ...ctx
-  }: {
-    response: InteractionCallbackResponse<boolean>;
-  } & Required<CommandContext>) {
-    if (!response.resource?.message)
+  protected async _startVote(
+    ctx: {
+      responseRef: InteractionCallbackResponse<boolean>;
+    } & Required<CommandContext>
+  ) {
+    const { responseRef } = ctx;
+    if (!responseRef.resource?.message)
       throw new Error("Unable to find response to interaction.");
-    await response.resource.message.react(EmojiEnum.EMOJI_AYE);
-    await response.resource.message.react(EmojiEnum.EMOJI_NAY);
+    await responseRef.resource.message.react(EmojiEnum.EMOJI_AYE);
+    await responseRef.resource.message.react(EmojiEnum.EMOJI_NAY);
 
     const filter = (reaction: MessageReaction, user: User) =>
       isVoteEmoji(reaction.emoji.name) && !user.bot;
 
-    const reactionCollector = response.resource.message.createReactionCollector(
-      {
+    const reactionCollector =
+      responseRef.resource.message.createReactionCollector({
         filter: filter,
         time: 30000,
         dispose: true,
-      }
-    );
+      });
 
     const voteCtxBase = {
       target: this._target,
       reactionCollector,
-      response,
       ...ctx,
     };
 
@@ -131,15 +153,25 @@ export abstract class VoteSubCommand<TTarget, TAction extends string> {
         reaction,
         ...voteCtxBase,
       };
-      collectHandler(this, voteCtx);
+      this.collectHandler(voteCtx);
+    });
+
+    reactionCollector.on("remove", (reaction: MessageReaction, user: User) => {
+      const voteCtx: VoteContext<TTarget> = {
+        reaction,
+        reactor: user,
+        ...voteCtxBase,
+      };
+      this.removeHandler(voteCtx);
+    });
+
+    reactionCollector.on("end", (_, reason: string) => {
+      if (reason === "time") {
+        if (!responseRef.resource?.message) return;
+        responseRef.resource.message
+          .reply(this._getExpiryMessage())
+          .catch((e) => console.error(e));
+      }
     });
   }
-}
-
-function removeHandler(voteCtx: VoteContext): void {
-  const { reaction, user, target } = voteCtx;
-  if (!isVoteEmoji(reaction.emoji.name)) return;
-  const type: EmojiEnum = reaction.emoji.name;
-  const total = getVoteTotal(reaction, target);
-  printStatus(target, user, total, type, true);
 }

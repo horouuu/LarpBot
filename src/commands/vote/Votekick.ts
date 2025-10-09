@@ -1,10 +1,32 @@
 import { CommandContext } from "@types-local/commands";
-import { VoteSubCommand } from "./Vote";
-import { Guild, GuildMember, MessageReaction, User } from "discord.js";
+import { VoteExecutionContext, VoteSubCommand } from "./Vote";
+import {
+  Guild,
+  InteractionCallbackResponse,
+  MessageReaction,
+  User,
+} from "discord.js";
 import { EmojiEnum } from "@utils";
 
 export class Votekick extends VoteSubCommand<User, "kick" | "ban"> {
-  async prepareContext(ctx: CommandContext) {
+  constructor(target: User, ban: boolean = false) {
+    const act = ban ? "ban" : "kick";
+    super(target, act);
+  }
+
+  public start = async (
+    ctx: Required<CommandContext> & {
+      responseRef: InteractionCallbackResponse<boolean>;
+    }
+  ) => {
+    await this._prepareContext(ctx);
+  };
+
+  protected async _prepareContext(
+    ctx: Required<CommandContext> & {
+      responseRef: InteractionCallbackResponse<boolean>;
+    }
+  ) {
     const { interaction } = ctx;
     const target = interaction.options.getUser("target");
     if (!target) throw new Error("Missing input: target.");
@@ -20,27 +42,35 @@ export class Votekick extends VoteSubCommand<User, "kick" | "ban"> {
 
     const ban = interaction.options.getBoolean("ban");
     this._action = ban ? "ban" : "kick";
+
+    await this._startVote(ctx);
   }
 
-  override async execute(kickCtx: KickContext): Promise<void> {
-    const { member, total, interaction, message } = kickCtx;
+  protected async _execute(ctx: VoteExecutionContext<User>): Promise<void> {
+    const { total, interaction, responseRef } = ctx;
     try {
       const user = this._target;
+      const member = await interaction.guild?.members.fetch(user.id);
       const ban = this._action === "ban";
-      const condition = ban ? member.bannable : member.kickable;
+      const condition = ban ? member?.bannable : member?.kickable;
+
       if (condition) {
         if (ban) {
-          await member.ban({ reason: `Vote-banned by ${total} other user(s)` });
+          await member?.ban({
+            reason: `Vote-banned by ${total} other user(s)`,
+          });
         } else {
-          await member.kick(`Vote-kicked by ${total} other user(s)`);
+          await member?.kick(`Vote-kicked by ${total} other user(s)`);
         }
 
         console.log(
           `Successfully ${ban ? "banned" : "kicked"} member ${
             user.username
-          } | ${member.id} ${
-            member.nickname ? `(${member.nickname})` : `(${member.displayName})`
-          } from guild ${member.guild.name} (${member.guild.id})`
+          } | ${member?.id} ${
+            member?.nickname
+              ? `(${member?.nickname})`
+              : `(${member?.displayName})`
+          } from guild ${member?.guild.name} (${member?.guild.id})`
         );
 
         const msg = `Vote to ${
@@ -52,7 +82,7 @@ export class Votekick extends VoteSubCommand<User, "kick" | "ban"> {
           await interaction.reply(msg);
         }
       } else {
-        await message?.reply(
+        await responseRef.resource?.message?.reply(
           `I don't have the permissions to ${ban ? "ban" : "kick"} that user!`
         );
       }

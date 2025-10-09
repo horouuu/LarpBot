@@ -1,14 +1,6 @@
 import {
-  CacheType,
-  MessageReaction,
-  User,
-  GuildMember,
-  InteractionCallbackResponse,
-  Message,
-  ReactionCollector,
   DiscordAPIError,
   RESTJSONErrorCodes,
-  ChatInputCommandInteraction,
   SlashCommandBuilder,
 } from "discord.js";
 import {
@@ -16,35 +8,13 @@ import {
   CommandContext,
   CommandContextRequire,
 } from "@types-local/commands";
-import { ConfigType } from "@config";
-import { catchAllInteractionReply, isVoteEmoji, EmojiEnum } from "@utils";
-import { Storage } from "@storage";
-import { VoteSubCommand } from "./vote/Vote";
 
-type VoteContext = {
-  reaction: MessageReaction;
-  user: User;
-  member: GuildMember;
-  target: User;
-  storage: Storage;
-  config: ConfigType;
-  response: InteractionCallbackResponse;
-  reactionCollector: ReactionCollector;
-  interaction?: ChatInputCommandInteraction<CacheType>;
-};
+import { catchAllInteractionReply } from "@utils";
+import { Votekick } from "./vote/Votekick";
 
 enum VoteEnum {
   VOTE_KICK = "kick",
 }
-
-type KickContext = {
-  message: Message | null;
-  user: User;
-  member: GuildMember;
-  total: number;
-  interaction: ChatInputCommandInteraction<CacheType>;
-  ban: boolean;
-};
 
 const votekickData = new SlashCommandBuilder()
   .setName("vote")
@@ -79,64 +49,16 @@ const votekick = {
     try {
       switch (cmd) {
         case VoteEnum.VOTE_KICK:
+          const target = interaction.options.getUser("target");
+          const ban = interaction.options.getBoolean("ban") ?? false;
+          if (!target) throw new Error("Please specify a target.");
+
+          const vkInstance = new Votekick(target, ban);
+          await vkInstance.start({ ...commandCtx, responseRef: response });
           break;
         default:
           throw new Error("Invalid subcommand.");
       }
-
-      if (!response.resource?.message)
-        throw new Error("Unable to find response to interaction.");
-      await response.resource.message.react(EmojiEnum.EMOJI_AYE);
-      await response.resource.message.react(EmojiEnum.EMOJI_NAY);
-
-      const filter = (reaction: MessageReaction, user: User) =>
-        isVoteEmoji(reaction.emoji.name) && !user.bot;
-
-      const reactionCollector =
-        response.resource.message.createReactionCollector({
-          filter: filter,
-          time: 30000,
-          dispose: true,
-        });
-
-      const voteCtxBase = {
-        member,
-        target,
-        config,
-        response,
-        reactionCollector,
-        storage,
-      };
-
-      reactionCollector.on(
-        "collect",
-        (reaction: MessageReaction, user: User) => {
-          const voteCtx: Required<VoteContext> = {
-            reaction,
-            user,
-            interaction,
-            ...voteCtxBase,
-          };
-          collectHandler(voteCtx);
-        }
-      );
-
-      reactionCollector.on(
-        "remove",
-        (reaction: MessageReaction, user: User) => {
-          const voteCtx: VoteContext = { reaction, user, ...voteCtxBase };
-          removeHandler(voteCtx);
-        }
-      );
-
-      reactionCollector.on("end", (_, reason: string) => {
-        if (reason === "time") {
-          if (!response.resource?.message) return;
-          response.resource.message
-            .reply(`Vote on member ${target} expired.`)
-            .catch((e) => console.error(e));
-        }
-      });
     } catch (e) {
       let errMsg = "";
       if (
