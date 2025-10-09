@@ -14,6 +14,7 @@ import { Votekick } from "./vote/Votekick";
 
 enum VoteEnum {
   VOTE_KICK = "kick",
+  VOTE_BAN = "ban",
 }
 
 const voteData = new SlashCommandBuilder()
@@ -29,11 +30,16 @@ const voteData = new SlashCommandBuilder()
           .setDescription("Target of the vote.")
           .setRequired(true)
       )
-      .addBooleanOption((opt) =>
+  )
+  .addSubcommand((opt) =>
+    opt
+      .setName("ban")
+      .setDescription("Starts a vote to ban a member.")
+      .addUserOption((opt) =>
         opt
-          .setName("ban")
-          .setDescription("Changes the result of the vote into a ban.")
-          .setRequired(false)
+          .setName("target")
+          .setDescription("Target of the vote.")
+          .setRequired(true)
       )
   );
 
@@ -42,18 +48,18 @@ const vote = {
   execute: async (
     commandCtx: CommandContextRequire<CommandContext, "config" | "storage">
   ) => {
-    const { interaction, config, storage } = commandCtx;
+    const { interaction } = commandCtx;
     if (!interaction.isChatInputCommand()) return;
     const response = await interaction.deferReply({ withResponse: true });
     const cmd = interaction.options.getSubcommand();
     try {
       switch (cmd) {
+        case VoteEnum.VOTE_BAN:
         case VoteEnum.VOTE_KICK:
           const target = interaction.options.getUser("target");
-          const ban = interaction.options.getBoolean("ban") ?? false;
           if (!target) throw new Error("Please specify a target.");
 
-          const vkInstance = new Votekick(target, ban);
+          const vkInstance = new Votekick(target, cmd);
           await vkInstance.start({ ...commandCtx, responseRef: response });
           break;
         default:
