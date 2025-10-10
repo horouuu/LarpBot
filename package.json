@@ -13,7 +13,7 @@
     "typescript": "^5.9.2"
   },
   "scripts": {
-    "build": "npx tsc && npx tsc-alias",
+    "build": "npx tsc && npx tsc-alias && node src/scripts/update-prices.cjs",
     "start": "node ./build/bot.js",
     "dev": "npx tsx ./src/bot.ts",
     "update-types": "npx tsx ./src/scripts/update-types.ts"
