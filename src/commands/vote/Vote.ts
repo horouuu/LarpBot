@@ -81,6 +81,7 @@ export abstract class VoteSubCommand<TTarget, TAction extends string> {
     // check votes
     if (total >= actionThreshold) {
       if (reaction.emoji.name === EmojiEnum.EMOJI_AYE) {
+        await this._execute({ ...voteCtx, total: total });
         await this._logSuccess(this._target, interaction.guild);
       } else if (reaction.emoji.name === EmojiEnum.EMOJI_NAY) {
         await this._logFailure(this._target, interaction.guild);
