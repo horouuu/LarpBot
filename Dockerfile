@@ -22,6 +22,7 @@ RUN npm ci --omit=dev
 
 COPY --from=builder /app/build ./build
 COPY --from=builder /app/src/scripts/*.cjs ./build/scripts
+RUN node ./build/scripts/fetch-prices.cjs
 RUN node ./build/scripts/update-prices.cjs
 
 CMD ["node", "build/bot.js"]

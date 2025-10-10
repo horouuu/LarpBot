@@ -14,4 +14,4 @@ fs.writeFileSync(
   "utf8"
 );
 
-console.log(`Successfully updated item prices with data from: 10/10/2025`);
+console.log(`Successfully updated item prices with newest data.`);
