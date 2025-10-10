@@ -50,6 +50,10 @@ export abstract class VoteSubCommand<TTarget, TAction extends string> {
     console.log(`Vote against target ${target} failed!`);
   }
 
+  protected async _logSuccess(target: TTarget, guild: Guild): Promise<void> {
+    console.log(`Vote against target ${target} passed!`);
+  }
+
   protected collectHandler = async (
     voteCtx: VoteContext<TTarget>
   ): Promise<undefined> => {
@@ -77,7 +81,7 @@ export abstract class VoteSubCommand<TTarget, TAction extends string> {
     // check votes
     if (total >= actionThreshold) {
       if (reaction.emoji.name === EmojiEnum.EMOJI_AYE) {
-        this._execute({ ...voteCtx, total: total });
+        await this._logSuccess(this._target, interaction.guild);
       } else if (reaction.emoji.name === EmojiEnum.EMOJI_NAY) {
         await this._logFailure(this._target, interaction.guild);
         interaction

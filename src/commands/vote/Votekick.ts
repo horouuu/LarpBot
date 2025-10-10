@@ -112,6 +112,11 @@ export class Votekick extends VoteSubCommand<User, "kick" | "ban"> {
     return total;
   }
 
+  protected override async _logSuccess(
+    target: User,
+    guild: Guild
+  ): Promise<void> {}
+
   protected override async _logFailure(target: User, guild: Guild) {
     const member = await guild.members.fetch(target.id);
     console.log(
