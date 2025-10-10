@@ -21,9 +21,7 @@ COPY package*.json ./
 RUN npm ci --omit=dev
 
 COPY --from=builder /app/build ./build
-COPY --from=builder /app/src/scripts/prices.json ./build/scripts/prices.json
-COPY --from=builder /app/src/scripts/update-prices.cjs ./build/scripts/update-prices.cjs
-
+COPY --from=builder /app/src/scripts/*.cjs ./build/scripts
 RUN node ./build/scripts/update-prices.cjs
 
 CMD ["node", "build/bot.js"]

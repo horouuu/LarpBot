@@ -17,6 +17,6 @@
     "start": "node ./build/bot.js",
     "dev": "npx tsx ./src/bot.ts",
     "update-types": "npx tsx ./src/scripts/update-types.ts",
-    "update-prices": "node src/scripts/update-prices.cjs"
+    "update-prices": "node src/scripts/fetch-prices.cjs && src/scripts/update-prices.cjs"
   }
 }
