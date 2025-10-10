@@ -1,6 +1,6 @@
 import { CommandContext } from "@types-local/commands";
 import { Clues, Util } from "oldschooljs";
-import { parseLoot } from "./_rs_utils";
+import { parseLoot } from "./_rs_utils.js";
 
 const clueList = [
   { tier: Clues.Medium, num: 1, name: "Medium" },

@@ -1,8 +1,8 @@
 import { CommandContext } from "@types-local/commands";
 import { SlashCommandBuilder } from "discord.js";
-import { openClue } from "./rs/_clue";
+import { openClue } from "./rs/_clue.js";
 import { catchAllInteractionReply } from "@utils";
-import { killMonster } from "./rs/_kill";
+import { killMonster } from "./rs/_kill.js";
 
 const rsData = new SlashCommandBuilder()
   .setName("rs")
