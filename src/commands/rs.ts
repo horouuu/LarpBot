@@ -27,12 +27,26 @@ const rs = {
     const { interaction } = ctx;
     const roll = Math.round(Math.random() * 3);
     const res = clueList[roll];
-    const rewards = res.tier.open(res.num).items()[0];
+    const rewards = res.tier.open(res.num).items();
+    let total = 0;
+    const spaces = Math.max(...rewards.map((i) => String(i[1]).length));
+    console.log(rewards.map((i) => String(i[1]).length));
+    const got = rewards
+      .map((r) => {
+        const item = r[0];
+        const amt = r[1];
+
+        total += item.price * amt;
+        return `${amt}x [${item.name}](<${item.wiki_url}>) (${Util.toKMB(
+          item.price * amt
+        )})`;
+      })
+      .join("\n");
 
     await interaction.reply(
-      `You opened a **[${res.name}]** clue scroll!\nGot: [${
-        rewards[0].name
-      }](<${rewards[0].wiki_url}>) (${Util.toKMB(rewards[0].price)})`
+      `You opened a **[${
+        res.name
+      }]** clue scroll!\n${got}\n### Total loot: ${Util.toKMB(total)}`
     );
   },
 };
