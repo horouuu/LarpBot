@@ -2,7 +2,7 @@ import { CommandContext } from "@types-local/commands";
 import { Monsters, Util } from "oldschooljs";
 import { parseLoot } from "./_rs_utils";
 
-export async function monsterKill(ctx: CommandContext) {
+export async function killMonster(ctx: CommandContext) {
   const { interaction } = ctx;
   const monster = interaction.options.getString("monster") ?? "_____";
   const found = Monsters.find((m) => m.aliases.includes(monster.toLowerCase()));

@@ -2,6 +2,7 @@ import { CommandContext } from "@types-local/commands";
 import { SlashCommandBuilder } from "discord.js";
 import { openClue } from "./rs/_clue";
 import { catchAllInteractionReply } from "@utils";
+import { killMonster } from "./rs/_kill";
 
 const rsData = new SlashCommandBuilder()
   .setName("rs")
@@ -37,6 +38,11 @@ const rs = {
         case "open":
           await openClue(ctx);
           break;
+        case "kill":
+          await killMonster(ctx);
+          break;
+        default:
+          throw new Error("Invalid input.");
       }
     } catch (e) {
       console.error(e);
