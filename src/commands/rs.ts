@@ -29,8 +29,7 @@ const rs = {
     const res = clueList[roll];
     const rewards = res.tier.open(res.num).items();
     let total = 0;
-    const spaces = Math.max(...rewards.map((i) => String(i[1]).length));
-    console.log(rewards.map((i) => String(i[1]).length));
+
     const got = rewards
       .map((r) => {
         const item = r[0];
