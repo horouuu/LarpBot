@@ -2,6 +2,7 @@
   "dependencies": {
     "discord.js": "^14.22.1",
     "dotenv": "^17.2.2",
+    "oldschooljs": "^2.6.1",
     "redis": "^5.8.2",
     "zod": "^4.1.11"
   },
