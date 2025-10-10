@@ -27,6 +27,71 @@ export abstract class VoteSubCommand<TTarget, TAction extends string> {
     this._action = action;
   }
 
+  public async start(
+    ctx: Required<CommandContext> & {
+      responseRef: InteractionCallbackResponse<boolean>;
+    }
+  ) {
+    await this._preStartVote(ctx);
+  }
+
+  protected abstract _preStartVote(ctx: CommandContext): Promise<void> | void;
+
+  protected async _startVote(
+    ctx: {
+      responseRef: InteractionCallbackResponse<boolean>;
+    } & Required<CommandContext>
+  ) {
+    const { responseRef } = ctx;
+    if (!responseRef.resource?.message)
+      throw new Error("Unable to find response to interaction.");
+    await responseRef.resource.message.react(EmojiEnum.EMOJI_AYE);
+    await responseRef.resource.message.react(EmojiEnum.EMOJI_NAY);
+
+    const filter = (reaction: MessageReaction, user: User) =>
+      isVoteEmoji(reaction.emoji.name) && !user.bot;
+
+    const reactionCollector =
+      responseRef.resource.message.createReactionCollector({
+        filter: filter,
+        time: 30000,
+        dispose: true,
+      });
+
+    const voteCtxBase = {
+      target: this._target,
+      reactionCollector,
+      ...ctx,
+    };
+
+    reactionCollector.on("collect", (reaction: MessageReaction, user: User) => {
+      const voteCtx: VoteContext<TTarget> = {
+        reactor: user,
+        reaction,
+        ...voteCtxBase,
+      };
+      this.collectHandler(voteCtx);
+    });
+
+    reactionCollector.on("remove", (reaction: MessageReaction, user: User) => {
+      const voteCtx: VoteContext<TTarget> = {
+        reaction,
+        reactor: user,
+        ...voteCtxBase,
+      };
+      this.removeHandler(voteCtx);
+    });
+
+    reactionCollector.on("end", (_, reason: string) => {
+      if (reason === "time") {
+        if (!responseRef.resource?.message) return;
+        responseRef.resource.message
+          .reply(this._getExpiryMessage())
+          .catch((e) => console.error(e));
+      }
+    });
+  }
+
   protected _getPrompt(): string {
     const formattedAction =
       this._action.toLowerCase().charAt(0).toUpperCase() +
@@ -101,14 +166,6 @@ export abstract class VoteSubCommand<TTarget, TAction extends string> {
     this._printStatus(target, reactor, total, type, true);
   };
 
-  protected abstract start: (
-    ctx: Required<CommandContext> & {
-      responseRef: InteractionCallbackResponse<boolean>;
-    }
-  ) => Promise<void>;
-
-  protected abstract _prepareContext(ctx: CommandContext): Promise<void> | void;
-
   protected abstract _execute(
     ctx: VoteExecutionContext<TTarget>
   ): Promise<void> | void;
@@ -125,59 +182,4 @@ export abstract class VoteSubCommand<TTarget, TAction extends string> {
     type: EmojiEnum,
     removed: boolean
   ): Promise<void> | void;
-
-  protected async _startVote(
-    ctx: {
-      responseRef: InteractionCallbackResponse<boolean>;
-    } & Required<CommandContext>
-  ) {
-    const { responseRef } = ctx;
-    if (!responseRef.resource?.message)
-      throw new Error("Unable to find response to interaction.");
-    await responseRef.resource.message.react(EmojiEnum.EMOJI_AYE);
-    await responseRef.resource.message.react(EmojiEnum.EMOJI_NAY);
-
-    const filter = (reaction: MessageReaction, user: User) =>
-      isVoteEmoji(reaction.emoji.name) && !user.bot;
-
-    const reactionCollector =
-      responseRef.resource.message.createReactionCollector({
-        filter: filter,
-        time: 30000,
-        dispose: true,
-      });
-
-    const voteCtxBase = {
-      target: this._target,
-      reactionCollector,
-      ...ctx,
-    };
-
-    reactionCollector.on("collect", (reaction: MessageReaction, user: User) => {
-      const voteCtx: VoteContext<TTarget> = {
-        reactor: user,
-        reaction,
-        ...voteCtxBase,
-      };
-      this.collectHandler(voteCtx);
-    });
-
-    reactionCollector.on("remove", (reaction: MessageReaction, user: User) => {
-      const voteCtx: VoteContext<TTarget> = {
-        reaction,
-        reactor: user,
-        ...voteCtxBase,
-      };
-      this.removeHandler(voteCtx);
-    });
-
-    reactionCollector.on("end", (_, reason: string) => {
-      if (reason === "time") {
-        if (!responseRef.resource?.message) return;
-        responseRef.resource.message
-          .reply(this._getExpiryMessage())
-          .catch((e) => console.error(e));
-      }
-    });
-  }
 }

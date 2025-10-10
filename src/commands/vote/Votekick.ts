@@ -9,15 +9,7 @@ import {
 import { EmojiEnum } from "@utils";
 
 export class Votekick extends VoteSubCommand<User, "kick" | "ban"> {
-  public start = async (
-    ctx: Required<CommandContext> & {
-      responseRef: InteractionCallbackResponse<boolean>;
-    }
-  ) => {
-    await this._prepareContext(ctx);
-  };
-
-  protected async _prepareContext(
+  protected async _preStartVote(
     ctx: Required<CommandContext> & {
       responseRef: InteractionCallbackResponse<boolean>;
     }
