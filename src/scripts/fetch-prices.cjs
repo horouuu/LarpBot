@@ -5,11 +5,11 @@ fetch("https://prices.runescape.wiki/api/v1/osrs/latest", {
 }).then((res) => {
   if (res.ok) {
     res.json().then((data) => {
-      fs.writeFileSync(
-        "./src/scripts/prices.json",
-        JSON.stringify(data, 2, null),
-        "utf8"
-      );
+      const path =
+        process.env.NODE_ENV === "production"
+          ? "./build/scripts/prices.json"
+          : "./src/scripts/prices.json";
+      fs.writeFileSync(path, JSON.stringify(data, 2, null), "utf8");
       console.log(
         `Successfully fetched data ${new Date().toLocaleTimeString()}`
       );
