@@ -8,8 +8,8 @@ import {
 
 export type CommandContext = {
   interaction: ChatInputCommandInteraction<CacheType>;
-  config?: ConfigType;
-  storage?: Storage;
+  config: ConfigType;
+  storage: Storage;
 };
 
 export type CommandContextRequire<
