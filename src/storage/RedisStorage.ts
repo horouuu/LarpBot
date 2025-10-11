@@ -17,6 +17,7 @@ enum RedisNamespaces {
 enum RedisTypes {
   STRING = "string",
   SET = "set",
+  HASH = "hash",
   NONE = "none",
 }
 
@@ -52,6 +53,12 @@ export class RedisStorage implements Storage {
     await client.connect();
 
     return new RedisStorage(client);
+  }
+
+  private async _checkType(key: string, type: RedisTypes, notNull = true) {
+    const t = await this.client.type(key);
+    if (t !== type && (t !== RedisTypes.NONE || !notNull)) return true;
+    return false;
   }
 
   private async _sAdd(key: string, members: string | string[]): Promise<void> {
@@ -98,7 +105,38 @@ export class RedisStorage implements Storage {
     }
   }
 
-  private async _set(key: string, value: string): Promise<void> {
+  public async hSet(
+    key: string,
+    obj: { [str: string | number]: string | number }
+  ) {
+    try {
+      if (!this._checkType(key, RedisTypes.HASH)) {
+        throw new Error(
+          `ERROR: Attempted to set hash value at key storing non-hash value ${key}.`
+        );
+      }
+      await this.client.hSet(key, obj);
+    } catch (e) {
+      console.error(e);
+      throw new Error("Failed to write to database!");
+    }
+  }
+
+  public async hGetAll(key: string) {
+    try {
+      if (!this._checkType(key, RedisTypes.HASH)) {
+        throw new Error(
+          `ERROR: Attempted to get hash value at key storing non-hash value ${key}.`
+        );
+      }
+      return await this.client.hGetAll(key);
+    } catch (e) {
+      console.error(e);
+      throw new Error("Failed to write to database!");
+    }
+  }
+
+  public async set(key: string, value: string): Promise<void> {
     try {
       const type = await this.client.type(key);
       if (type !== RedisTypes.STRING && type !== RedisTypes.NONE)
@@ -112,7 +150,7 @@ export class RedisStorage implements Storage {
     }
   }
 
-  private async _get(key: string): Promise<string | null> {
+  public async get(key: string): Promise<string | null> {
     try {
       const type = await this.client.type(key);
       if (type !== RedisTypes.STRING && type !== RedisTypes.NONE) {
@@ -191,7 +229,7 @@ export class RedisStorage implements Storage {
     for (const key of Object.keys(config) as T[]) {
       const value = config[key];
       const redisKey: string = `${RedisNamespaces.GUILDS}:${guildId}:${RedisNamespaces.CONFIGS}:${key}`;
-      await this._set(redisKey, value.toString());
+      await this.set(redisKey, value.toString());
     }
   }
 
@@ -229,14 +267,14 @@ export class RedisStorage implements Storage {
     if (stored && !force) {
       return { success: false, watching: stored };
     } else {
-      this._set(key, channelId);
+      this.set(key, channelId);
       return { success: true as true };
     }
   }
 
   public async chGetGatekeeper(guildId: string): Promise<string | null> {
     const key = `${RedisNamespaces.GUILDS}:${guildId}:${RedisNamespaces.COMMANDS}:gatekeeper:channelsWatched`;
-    return await this._get(key);
+    return await this.get(key);
   }
 
   public async chDelGatekeeper(guildId: string) {
@@ -261,7 +299,7 @@ export class RedisStorage implements Storage {
 
   public async checkGuildMemberRole(guildId: string) {
     const key = `${RedisNamespaces.GUILDS}:${guildId}:configs:memberRole`;
-    const memberId = await this._get(key);
+    const memberId = await this.get(key);
     return memberId;
   }
 
@@ -271,26 +309,26 @@ export class RedisStorage implements Storage {
     force = false
   ) {
     const key = `${RedisNamespaces.GUILDS}:${guildId}:memberRole`;
-    const current = await this._get(key);
+    const current = await this.get(key);
     if (current && !force) {
       return { success: false, current: current };
     } else {
-      await this._set(key, roleId);
+      await this.set(key, roleId);
       return { success: true as true };
     }
   }
 
   public async setMotd(guildId: string, msg: string) {
     const key = `guilds:${guildId}:commands:motd:message`;
-    const replaced = await this._get(key);
-    await this._set(key, msg);
+    const replaced = await this.get(key);
+    await this.set(key, msg);
 
     return replaced;
   }
 
   public async getMotd(guildId: string) {
     const key = `guilds:${guildId}:commands:motd:message`;
-    const motd = await this._get(key);
+    const motd = await this.get(key);
 
     return motd;
   }
