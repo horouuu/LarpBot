@@ -1,5 +1,5 @@
 import { CommandContext } from "@types-local/commands";
-import { Clues, Util } from "oldschooljs";
+import { Clues } from "oldschooljs";
 import { parseLoot } from "./_rs_utils.js";
 
 const clueList = [
