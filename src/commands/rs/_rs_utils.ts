@@ -1,21 +1,21 @@
 import { Item, Util } from "oldschooljs";
 
-export type DBClueData = {
-  medium: number;
-  hard: number;
-  elite: number;
-  master: number;
-  clueCoins: number;
+export type DBClueData<T extends string | number> = {
+  medium: T;
+  hard: T;
+  elite: T;
+  master: T;
+  clueCoins: T;
 };
 
-export function getEmptyClueData(): DBClueData {
+export function getEmptyClueData(): DBClueData<number> {
   return {
     medium: 0,
     hard: 0,
     elite: 0,
     master: 0,
     clueCoins: 0,
-  } as DBClueData;
+  } as DBClueData<number>;
 }
 
 export function getClueKey(userId: string) {
