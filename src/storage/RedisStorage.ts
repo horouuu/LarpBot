@@ -6,7 +6,8 @@ import {
   PersistedKey,
   Storage,
 } from "@storage";
-import { AtLeastOne, OrNullEntries } from "@types-local/util";
+import { OrNullEntries } from "@types-local/util";
+import { DBClueData, getClueKey, getCoinsKey } from "@commands/rs/_rs_utils.js";
 
 enum RedisNamespaces {
   GUILDS = "guilds",
@@ -106,7 +107,7 @@ export class RedisStorage implements Storage {
     }
   }
 
-  public async hSet(
+  private async hSet(
     key: string,
     obj: { [str: string | number]: string | number }
   ) {
@@ -123,7 +124,7 @@ export class RedisStorage implements Storage {
     }
   }
 
-  public async hGetAll(key: string) {
+  private async _hGetAll(key: string) {
     try {
       if (!this._checkType(key, RedisTypes.HASH)) {
         throw new Error(
@@ -137,7 +138,7 @@ export class RedisStorage implements Storage {
     }
   }
 
-  public async hIncrByFields(key: string, obj: Object) {
+  private async _hIncrByFields(key: string, obj: Object) {
     try {
       const batch = this._client.multi();
       for (const [k, v] of Object.entries(obj)) {
@@ -361,6 +362,21 @@ export class RedisStorage implements Storage {
   public async clearMotd(guildId: string) {
     const key = `guilds:${guildId}:commands:motd:message`;
     await this._getDel(key);
+  }
+
+  public async updateClueData(userId: string, data: DBClueData) {
+    const clueKey = getClueKey(userId);
+    await this._hIncrByFields(clueKey, data);
+  }
+
+  public async getClueData(userId: string) {
+    const clueKey = getClueKey(userId);
+    return (await this._hGetAll(clueKey)) as unknown as DBClueData;
+  }
+
+  public async updateCoins(userId: string, change: number) {
+    const coinsKey = getCoinsKey(userId);
+    await this.set(coinsKey, change.toString());
   }
 
   public async destroy(): Promise<void> {
