@@ -4,7 +4,6 @@
     "module": "es2022",
     "moduleResolution": "node",
     "sourceMap": true,
-    "allowSyntheticDefaultImports": true,
     "outDir": "./build",
     "baseUrl": "./src",
     "strict": true,
