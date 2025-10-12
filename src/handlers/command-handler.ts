@@ -16,7 +16,7 @@ export async function initCommands(config: ConfigType) {
   const commands = await loadCommands();
   const rest = new REST({ version: "10" }).setToken(config.token);
 
-  console.log(`\nLoaded commands:\n ${JSON.stringify(commands, null, 2)}\n`);
+  console.log(`\nLoaded ${Object.entries(commands).length} commands.\n`);
 
   try {
     console.log("Started refreshing application commands.");

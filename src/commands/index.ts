@@ -1,5 +1,5 @@
-import fs from "node:fs";
-import path from "node:path";
+import * as fs from "node:fs";
+import * as path from "node:path";
 import { pathToFileURL } from "node:url";
 import { Command } from "@types-local/commands";
 import { CommandName } from "@/types/generated/commands";
@@ -28,7 +28,9 @@ export async function loadCommands(): Promise<CommandsMap> {
       const cmd: Command = mod[cmdLabel];
 
       if (!cmd) {
-        throw new Error(`File ${f.name} does not contain export "${cmdLabel}".`);
+        throw new Error(
+          `File ${f.name} does not contain export "${cmdLabel}".`
+        );
       }
 
       return [cmdLabel, cmd];
