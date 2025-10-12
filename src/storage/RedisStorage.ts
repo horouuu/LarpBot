@@ -6,7 +6,12 @@ import {
   PersistedKey,
   Storage,
 } from "@storage";
-import { AtLeastOne, OrNullEntries } from "@types-local/util";
+import { OrNullEntries } from "@types-local/util";
+import {
+  DBClueData,
+  getClueKey as getRsClueKey,
+  getCoinsKey as getRsCoinsKey,
+} from "@commands/rs/_rs_utils.js";
 
 enum RedisNamespaces {
   GUILDS = "guilds",
@@ -17,6 +22,7 @@ enum RedisNamespaces {
 enum RedisTypes {
   STRING = "string",
   SET = "set",
+  HASH = "hash",
   NONE = "none",
 }
 
@@ -36,11 +42,12 @@ function decodeValueFromKey(
       return value as any;
   }
 }
-export class RedisStorage implements Storage {
-  private client: ReturnType<typeof createClient>;
 
-  private constructor(client: typeof this.client) {
-    this.client = client;
+export class RedisStorage implements Storage {
+  private _client: ReturnType<typeof createClient>;
+
+  private constructor(client: typeof this._client) {
+    this._client = client;
   }
 
   public static async create(config: ConfigType) {
@@ -54,15 +61,21 @@ export class RedisStorage implements Storage {
     return new RedisStorage(client);
   }
 
+  private async _checkType(key: string, type: RedisTypes, notNull = true) {
+    const t = await this._client.type(key);
+    if (t !== type && (t !== RedisTypes.NONE || !notNull)) return true;
+    return false;
+  }
+
   private async _sAdd(key: string, members: string | string[]): Promise<void> {
     try {
-      const type = await this.client.type(key);
+      const type = await this._client.type(key);
       if (type !== RedisTypes.SET && type !== RedisTypes.NONE)
         throw new Error(
           `ERROR: sAdd tried to add set item to non-set store (${type}) at key ${key}`
         );
 
-      await this.client.sAdd(key, members);
+      await this._client.sAdd(key, members);
     } catch (e) {
       console.error(e);
       throw new Error("Failed to write to database!");
@@ -71,12 +84,12 @@ export class RedisStorage implements Storage {
 
   public async _sGet(key: string): Promise<string[]> {
     try {
-      const type = await this.client.type(key);
+      const type = await this._client.type(key);
       if (type !== RedisTypes.SET)
         throw new Error(
           `ERROR: sGet tried to retrieve non-set item at key ${key}`
         );
-      return await this.client.sMembers(key);
+      return await this._client.sMembers(key);
     } catch (e) {
       console.error(e);
       throw new Error("Failed to fetch from database!");
@@ -85,46 +98,100 @@ export class RedisStorage implements Storage {
 
   private async _sRem(key: string, members: string): Promise<number> {
     try {
-      const type = await this.client.type(key);
+      const type = await this._client.type(key);
       if (type !== RedisTypes.SET)
         throw new Error(
           `ERROR: sRem Attempted to remove set item from key storing non-set value at key ${key}.`
         );
 
-      return await this.client.sRem(key, members);
+      return await this._client.sRem(key, members);
     } catch (e) {
       console.error(e);
       throw new Error("Failed to write to database!");
     }
   }
 
-  private async _set(key: string, value: string): Promise<void> {
+  private async hSet(
+    key: string,
+    obj: { [str: string | number]: string | number }
+  ) {
     try {
-      const type = await this.client.type(key);
+      if (!this._checkType(key, RedisTypes.HASH)) {
+        throw new Error(
+          `ERROR: Attempted to set hash value at key storing non-hash value ${key}.`
+        );
+      }
+      await this._client.hSet(key, obj);
+    } catch (e) {
+      console.error(e);
+      throw new Error("Failed to write to database!");
+    }
+  }
+
+  private async _hGetAll(key: string) {
+    try {
+      if (!this._checkType(key, RedisTypes.HASH)) {
+        throw new Error(
+          `ERROR: Attempted to get hash value at key storing non-hash value ${key}.`
+        );
+      }
+      return await this._client.hGetAll(key);
+    } catch (e) {
+      console.error(e);
+      throw new Error("Failed to write to database!");
+    }
+  }
+
+  private async _hIncrByFields(key: string, obj: Object) {
+    try {
+      const batch = this._client.multi();
+      for (const [k, v] of Object.entries(obj)) {
+        batch.hIncrBy(key, k, v);
+      }
+
+      await batch.execAsPipeline();
+    } catch (e) {
+      console.error(e);
+      throw new Error("Failed to write to database!");
+    }
+  }
+
+  public async set(key: string, value: string): Promise<void> {
+    try {
+      const type = await this._client.type(key);
       if (type !== RedisTypes.STRING && type !== RedisTypes.NONE)
         throw new Error(
           `ERROR: Attempted to set string value at key storing non-string value ${key}.`
         );
-      await this.client.set(key, value);
+      await this._client.set(key, value);
     } catch (e) {
       console.error(e);
       throw new Error("Failed to write to database!");
     }
   }
 
-  private async _get(key: string): Promise<string | null> {
+  public async get(key: string): Promise<string | null> {
     try {
-      const type = await this.client.type(key);
+      const type = await this._client.type(key);
       if (type !== RedisTypes.STRING && type !== RedisTypes.NONE) {
         throw new Error(
           `ERROR: get tried to retrieve non-string value at key ${key}`
         );
       }
-      const res = await this.client.get(key);
+      const res = await this._client.get(key);
       return res;
     } catch (e) {
       console.error(e);
       throw new Error("Failed to fetch from database!");
+    }
+  }
+
+  public async incrBy(key: string, incr: number) {
+    try {
+      await this._client.incrBy(key, incr);
+    } catch (e) {
+      console.error(e);
+      throw new Error("Failed to write to database!");
     }
   }
 
@@ -137,7 +204,7 @@ export class RedisStorage implements Storage {
       let cursor = "0";
       const found: string[] = [];
       do {
-        const res = await this.client.scan(cursor, {
+        const res = await this._client.scan(cursor, {
           MATCH: match,
         });
 
@@ -160,13 +227,13 @@ export class RedisStorage implements Storage {
 
   private async _getDel(key: string): Promise<string | null> {
     try {
-      const type = await this.client.type(key);
+      const type = await this._client.type(key);
       if (type !== RedisTypes.STRING && type !== RedisTypes.NONE) {
         throw new Error(
           `ERROR: get tried to retrieve non-string value at key ${key}`
         );
       }
-      const res = await this.client.getDel(key);
+      const res = await this._client.getDel(key);
       return res;
     } catch (e) {
       console.error(e);
@@ -176,7 +243,7 @@ export class RedisStorage implements Storage {
 
   private async _mGet(keys: string[]): Promise<string[]> {
     try {
-      return (await this.client.mGet(keys)) as string[];
+      return (await this._client.mGet(keys)) as string[];
     } catch (e) {
       console.error(e);
       throw new Error("Failed to fetch from database!");
@@ -191,7 +258,17 @@ export class RedisStorage implements Storage {
     for (const key of Object.keys(config) as T[]) {
       const value = config[key];
       const redisKey: string = `${RedisNamespaces.GUILDS}:${guildId}:${RedisNamespaces.CONFIGS}:${key}`;
-      await this._set(redisKey, value.toString());
+      await this.set(redisKey, value.toString());
+    }
+  }
+
+  public async checkIfEmpty(key: string): Promise<boolean> {
+    try {
+      const type = await this._client.type(key);
+      return type === RedisTypes.NONE;
+    } catch (e) {
+      console.error(e);
+      throw new Error("Failed to fetch from database!");
     }
   }
 
@@ -225,18 +302,18 @@ export class RedisStorage implements Storage {
   ) {
     const key = `${RedisNamespaces.GUILDS}:${guildId}:${RedisNamespaces.COMMANDS}:gatekeeper:channelsWatched`;
 
-    const stored = await this.client.get(key);
+    const stored = await this._client.get(key);
     if (stored && !force) {
       return { success: false, watching: stored };
     } else {
-      this._set(key, channelId);
+      this.set(key, channelId);
       return { success: true as true };
     }
   }
 
   public async chGetGatekeeper(guildId: string): Promise<string | null> {
     const key = `${RedisNamespaces.GUILDS}:${guildId}:${RedisNamespaces.COMMANDS}:gatekeeper:channelsWatched`;
-    return await this._get(key);
+    return await this.get(key);
   }
 
   public async chDelGatekeeper(guildId: string) {
@@ -261,7 +338,7 @@ export class RedisStorage implements Storage {
 
   public async checkGuildMemberRole(guildId: string) {
     const key = `${RedisNamespaces.GUILDS}:${guildId}:configs:memberRole`;
-    const memberId = await this._get(key);
+    const memberId = await this.get(key);
     return memberId;
   }
 
@@ -271,26 +348,26 @@ export class RedisStorage implements Storage {
     force = false
   ) {
     const key = `${RedisNamespaces.GUILDS}:${guildId}:memberRole`;
-    const current = await this._get(key);
+    const current = await this.get(key);
     if (current && !force) {
       return { success: false, current: current };
     } else {
-      await this._set(key, roleId);
+      await this.set(key, roleId);
       return { success: true as true };
     }
   }
 
   public async setMotd(guildId: string, msg: string) {
     const key = `guilds:${guildId}:commands:motd:message`;
-    const replaced = await this._get(key);
-    await this._set(key, msg);
+    const replaced = await this.get(key);
+    await this.set(key, msg);
 
     return replaced;
   }
 
   public async getMotd(guildId: string) {
     const key = `guilds:${guildId}:commands:motd:message`;
-    const motd = await this._get(key);
+    const motd = await this.get(key);
 
     return motd;
   }
@@ -300,7 +377,23 @@ export class RedisStorage implements Storage {
     await this._getDel(key);
   }
 
+  public async updateClueData(userId: string, data: DBClueData<number>) {
+    const clueKey = getRsClueKey(userId);
+    await this._hIncrByFields(clueKey, data);
+    await this.updateCoins(userId, data.clueCoins);
+  }
+
+  public async getClueData(userId: string) {
+    const clueKey = getRsClueKey(userId);
+    return (await this._hGetAll(clueKey)) as unknown as DBClueData<string>;
+  }
+
+  public async updateCoins(userId: string, change: number) {
+    const coinsKey = getRsCoinsKey(userId);
+    await this.incrBy(coinsKey, change);
+  }
+
   public async destroy(): Promise<void> {
-    await this.client.close();
+    await this._client.close();
   }
 }

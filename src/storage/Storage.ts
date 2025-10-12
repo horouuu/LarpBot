@@ -1,5 +1,5 @@
 import { OrNullEntries } from "@types-local/util";
-import { ConfigType } from "@config";
+import { DBClueData } from "@commands/rs/_rs_utils";
 
 const persistedConfigs = ["actionThreshold", "memberRole"] as const;
 type PersistedKey = (typeof persistedConfigs)[number];
@@ -51,6 +51,12 @@ export abstract class Storage {
   abstract getMotd(guildId: string): Promise<string | null>;
 
   abstract clearMotd(guildId: string): Promise<void>;
+
+  abstract updateClueData(userId: string, data: DBClueData<number>): Promise<void>;
+
+  abstract getClueData(userId: string): Promise<DBClueData<string>>;
+
+  abstract updateCoins(userId: string, change: number): Promise<void>;
 }
 
 export type { PersistedKey, PersistedConfigs };

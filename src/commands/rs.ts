@@ -1,6 +1,6 @@
 import { CommandContext } from "@types-local/commands";
 import { SlashCommandBuilder } from "discord.js";
-import { openClue } from "./rs/_clue.js";
+import { openClue, showClueStats } from "./rs/_clue.js";
 import { catchAllInteractionReply } from "@utils";
 import { killMonster } from "./rs/_kill.js";
 
@@ -13,6 +13,9 @@ const rsData = new SlashCommandBuilder()
       .setDescription("Run clue-related commands.")
       .addSubcommand((opt) =>
         opt.setName("open").setDescription("Open a random clue casket!")
+      )
+      .addSubcommand((opt) =>
+        opt.setName("stats").setDescription("View your clue stats.")
       )
   )
   .addSubcommand((opt) =>
@@ -32,7 +35,7 @@ const rs = {
   async execute(ctx: CommandContext) {
     const { interaction } = ctx;
     const cmd = interaction.options.getSubcommand();
-
+    const cmdGroup = interaction.options.getSubcommandGroup();
     try {
       switch (cmd) {
         case "open":
@@ -40,6 +43,12 @@ const rs = {
           break;
         case "kill":
           await killMonster(ctx);
+          break;
+        case "stats":
+          if (cmdGroup === "clue") {
+            await showClueStats(ctx);
+          }
+
           break;
         default:
           throw new Error("Invalid input.");
