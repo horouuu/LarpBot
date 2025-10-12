@@ -37,6 +37,14 @@ export async function openClue(ctx: CommandContext) {
 export async function showClueStats(ctx: CommandContext) {
   const { interaction, storage } = ctx;
   const userClueData = await storage.getClueData(interaction.user.id);
+  const totalClues = [
+    userClueData.medium,
+    userClueData.hard,
+    userClueData.elite,
+    userClueData.master,
+  ]
+    .map((d) => parseInt(d))
+    .reduce((prev, curr) => prev + curr);
 
   await interaction.reply(
     `### ${interaction.user}'s Clue Stats\n\`\`\`\n${
@@ -44,7 +52,7 @@ export async function showClueStats(ctx: CommandContext) {
     }x Medium\n${userClueData.hard}x Hard\n${userClueData.elite}x Elite\n${
       userClueData.master
     }x Master\`\`\`You've earned **${toKMB(
-      userClueData.clueCoins
-    )}** coins from clues.`
+      parseInt(userClueData.clueCoins)
+    )}** coins from ${totalClues} clue(s).`
   );
 }

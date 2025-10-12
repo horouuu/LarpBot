@@ -7,7 +7,11 @@ import {
   Storage,
 } from "@storage";
 import { OrNullEntries } from "@types-local/util";
-import { DBClueData, getClueKey, getCoinsKey } from "@commands/rs/_rs_utils.js";
+import {
+  DBClueData,
+  getClueKey as getRsClueKey,
+  getCoinsKey as getRsCoinsKey,
+} from "@commands/rs/_rs_utils.js";
 
 enum RedisNamespaces {
   GUILDS = "guilds",
@@ -179,6 +183,15 @@ export class RedisStorage implements Storage {
     } catch (e) {
       console.error(e);
       throw new Error("Failed to fetch from database!");
+    }
+  }
+
+  public async incrBy(key: string, incr: number) {
+    try {
+      await this._client.incrBy(key, incr);
+    } catch (e) {
+      console.error(e);
+      throw new Error("Failed to write to database!");
     }
   }
 
@@ -364,19 +377,20 @@ export class RedisStorage implements Storage {
     await this._getDel(key);
   }
 
-  public async updateClueData(userId: string, data: DBClueData) {
-    const clueKey = getClueKey(userId);
+  public async updateClueData(userId: string, data: DBClueData<number>) {
+    const clueKey = getRsClueKey(userId);
     await this._hIncrByFields(clueKey, data);
+    await this.updateCoins(userId, data.clueCoins);
   }
 
   public async getClueData(userId: string) {
-    const clueKey = getClueKey(userId);
-    return (await this._hGetAll(clueKey)) as unknown as DBClueData;
+    const clueKey = getRsClueKey(userId);
+    return (await this._hGetAll(clueKey)) as unknown as DBClueData<string>;
   }
 
   public async updateCoins(userId: string, change: number) {
-    const coinsKey = getCoinsKey(userId);
-    await this.set(coinsKey, change.toString());
+    const coinsKey = getRsCoinsKey(userId);
+    await this.incrBy(coinsKey, change);
   }
 
   public async destroy(): Promise<void> {
