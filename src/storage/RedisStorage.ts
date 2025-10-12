@@ -9,6 +9,7 @@ import {
 import { OrNullEntries } from "@types-local/util";
 import {
   DBClueData,
+  getEmptyClueData,
   getClueKey as getRsClueKey,
   getCoinsKey as getRsCoinsKey,
 } from "@commands/rs/_rs_utils.js";
@@ -385,6 +386,12 @@ export class RedisStorage implements Storage {
 
   public async getClueData(userId: string) {
     const clueKey = getRsClueKey(userId);
+    const type = await this._client.type(clueKey);
+    if (type === RedisTypes.NONE) {
+      const clueData = getEmptyClueData();
+      await this.updateClueData(clueKey, clueData);
+      return getEmptyClueData<string>(true);
+    }
     return (await this._hGetAll(clueKey)) as unknown as DBClueData<string>;
   }
 
