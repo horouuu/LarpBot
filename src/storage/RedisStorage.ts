@@ -389,7 +389,7 @@ export class RedisStorage implements Storage {
     const type = await this._client.type(clueKey);
     if (type === RedisTypes.NONE) {
       const clueData = getEmptyClueData();
-      await this.updateClueData(clueKey, clueData);
+      await this.updateClueData(userId, clueData);
       return getEmptyClueData<string>(true);
     }
     return (await this._hGetAll(clueKey)) as unknown as DBClueData<string>;
