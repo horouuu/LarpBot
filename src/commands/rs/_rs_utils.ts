@@ -1,4 +1,6 @@
 import { Item, Util } from "oldschooljs";
+import { MonsterData } from "oldschooljs/dist/meta/monsterData";
+import SimpleMonster from "oldschooljs/dist/structures/SimpleMonster";
 
 export type DBClueData<T extends string | number> = {
   medium: T;
@@ -59,4 +61,9 @@ export function parseLoot(rewards: [Item, number][]) {
 
   const totalStr = Util.toKMB(total);
   return { got, total: totalStr, totalRaw: total };
+}
+
+export function attachWikiURL(monster: SimpleMonster, wikiURL: string) {
+  monster.data = {} as MonsterData;
+  monster.data.wikiURL = wikiURL;
 }
