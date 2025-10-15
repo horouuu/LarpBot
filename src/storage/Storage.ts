@@ -62,6 +62,8 @@ export abstract class Storage {
 
   abstract updateCoins(userId: string, change: number): Promise<void>;
 
+  abstract getInventory(userId: string): Promise<{ [id: string]: string }>;
+
   abstract updateInventory(
     userId: string,
     items: [Item, number][]

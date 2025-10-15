@@ -427,6 +427,23 @@ export class RedisStorage implements Storage {
     await this._hIncrByFieldsBucket(baseKey, 1000, itemsMap);
   }
 
+  public async getInventory(userId: string): Promise<{ [id: string]: string }> {
+    const baseKey = `users:${userId}:rs:inv:*`;
+    const keys = await this._scan({ match: baseKey });
+    
+    const invs: { [id: string]: string }[] = [];
+    for (const key of keys) {
+      if ((await this._client.type(key)) == "hash") {
+        const inv = await this._hGetAll(key);
+        invs.push(inv);
+      }
+    }
+
+    const final: { [id: string]: string } = {};
+    invs.reduce((prev, curr) => Object.assign(prev, curr), final);
+    return final;
+  }
+
   public async destroy(): Promise<void> {
     await this._client.close();
   }

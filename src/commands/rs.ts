@@ -3,6 +3,7 @@ import { SlashCommandBuilder } from "discord.js";
 import { openClue, showClueStats } from "./rs/_clue.js";
 import { catchAllInteractionReply } from "@utils";
 import { killMonster } from "./rs/_kill.js";
+import { getInventoryEmbed } from "./rs/_bank.js";
 
 const rsData = new SlashCommandBuilder()
   .setName("rs")
@@ -28,6 +29,9 @@ const rsData = new SlashCommandBuilder()
           .setDescription("Name of the monster to simulate killing.")
           .setRequired(true)
       )
+  )
+  .addSubcommand((opt) =>
+    opt.setName("bank").setDescription("View your bank.")
   );
 
 const rs = {
@@ -48,7 +52,9 @@ const rs = {
           if (cmdGroup === "clue") {
             await showClueStats(ctx);
           }
-
+          break;
+        case "bank":
+          await getInventoryEmbed(ctx);
           break;
         default:
           throw new Error("Invalid input.");
