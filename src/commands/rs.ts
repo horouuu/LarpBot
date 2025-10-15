@@ -54,7 +54,8 @@ const rs = {
           }
           break;
         case "bank":
-          await getInventoryEmbed(ctx);
+          const embed = await getInventoryEmbed(ctx);
+          await interaction.reply({ embeds: [embed] });
           break;
         default:
           throw new Error("Invalid input.");
