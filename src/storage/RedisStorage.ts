@@ -424,7 +424,7 @@ export class RedisStorage implements Storage {
     const baseKey = `users:${userId}:rs:inv`;
     const itemsMap: { [id: number]: number } = {};
     items.forEach((t) => (itemsMap[t[0].id] = t[1]));
-    await this._hIncrByFieldsBucket(baseKey, 500, itemsMap);
+    await this._hIncrByFieldsBucket(baseKey, 1000, itemsMap);
   }
 
   public async destroy(): Promise<void> {
