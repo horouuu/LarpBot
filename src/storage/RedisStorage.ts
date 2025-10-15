@@ -13,6 +13,7 @@ import {
   getClueKey as getRsClueKey,
   getCoinsKey as getRsCoinsKey,
 } from "@commands/rs/_rs_utils.js";
+import { Item } from "oldschooljs";
 
 enum RedisNamespaces {
   GUILDS = "guilds",
@@ -147,6 +148,25 @@ export class RedisStorage implements Storage {
     try {
       const batch = this._client.multi();
       for (const [k, v] of Object.entries(obj)) {
+        batch.hIncrBy(key, k, v);
+      }
+
+      await batch.execAsPipeline();
+    } catch (e) {
+      console.error(e);
+      throw new Error("Failed to write to database!");
+    }
+  }
+
+  private async _hIncrByFieldsBucket(
+    baseKey: string,
+    bucketSize: number,
+    obj: { [id: number]: any }
+  ) {
+    try {
+      const batch = this._client.multi();
+      for (const [k, v] of Object.entries(obj)) {
+        const key = `${baseKey}:${Math.floor(parseInt(k) / bucketSize)}`;
         batch.hIncrBy(key, k, v);
       }
 
@@ -398,6 +418,13 @@ export class RedisStorage implements Storage {
   public async updateCoins(userId: string, change: number) {
     const coinsKey = getRsCoinsKey(userId);
     await this.incrBy(coinsKey, change);
+  }
+
+  public async updateInventory(userId: string, items: [Item, number][]) {
+    const baseKey = `users:${userId}:rs:inv`;
+    const itemsMap: { [id: number]: number } = {};
+    items.forEach((t) => (itemsMap[t[0].id] = t[1]));
+    await this._hIncrByFieldsBucket(baseKey, 500, itemsMap);
   }
 
   public async destroy(): Promise<void> {
