@@ -9,7 +9,7 @@ import {
 import { Item, Items } from "oldschooljs";
 import { toKMB } from "oldschooljs/dist/util";
 
-export async function getInventoryEmbed(ctx: CommandContext) {
+export async function getInventoryEmbeds(ctx: CommandContext) {
   const { interaction, storage } = ctx;
   const inv = await storage.getInventory(interaction.user.id);
   const coins = await storage.getCoins(interaction.user.id);

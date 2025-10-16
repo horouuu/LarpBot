@@ -7,7 +7,7 @@ import {
 import { openClue, showClueStats } from "./rs/_clue.js";
 import { catchAllInteractionReply } from "@utils";
 import { killMonster } from "./rs/_kill.js";
-import { getInventoryEmbed as getInventoryEmbeds } from "./rs/_bank.js";
+import { getInventoryEmbeds } from "./rs/_bank.js";
 
 const rsData = new SlashCommandBuilder()
   .setName("rs")
