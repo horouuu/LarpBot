@@ -59,7 +59,7 @@ async function handleView(ctx: MotdContext & { guildId: string }) {
   const motd = await storage.getMotd(guildId);
   let msg = `There is currently no message of the day.`;
   if (motd !== null) {
-    msg = `### [MOTD]\n${motd}`;
+    msg = motd;
   }
 
   await interaction.reply(msg);
