@@ -111,6 +111,9 @@ const rs = {
           break;
         case "bank":
           const out = await getInventoryEmbeds(ctx);
+          if (out.embeds.length === 0)
+            return await interaction.reply("You have no items!");
+          
           const msg = await interaction.reply({
             embeds: [out.embeds[0]],
             components: [out.actionRow],
