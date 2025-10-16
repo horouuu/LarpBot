@@ -51,9 +51,7 @@ async function handleSet(ctx: MotdContext & { guildId: string }) {
     msg.length > 50 ? `${msg.slice(0, 50)}...` : msg
   }\``;
   if (replaced !== null) {
-    setMsg += `\nReplaced: \`${
-      replaced.length > 50 ? `${replaced.slice(0, 50)}...` : replaced
-    }\``;
+    setMsg += `\nReplaced: \`${replaced}\``;
   }
   await interaction.reply(setMsg);
 }
