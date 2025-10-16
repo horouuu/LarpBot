@@ -6,8 +6,7 @@ import {
   ButtonStyle,
   EmbedBuilder,
 } from "discord.js";
-import { Item, Items } from "oldschooljs";
-import { toKMB } from "oldschooljs/dist/util";
+import { Item, Items, Util } from "oldschooljs";
 
 export async function getInventoryEmbeds(ctx: CommandContext) {
   const { interaction, storage } = ctx;
@@ -30,7 +29,7 @@ export async function getInventoryEmbeds(ctx: CommandContext) {
       const totalItemValue = parseInt(entry[1]) * entry[0].price;
       return {
         name: entry[0].name,
-        value: `${entry[1]}x (${toKMB(totalItemValue)})`,
+        value: `${entry[1]}x (${Util.toKMB(totalItemValue)})`,
         valueRaw: totalItemValue,
         inline: true,
       };
@@ -55,9 +54,11 @@ export async function getInventoryEmbeds(ctx: CommandContext) {
         name: interaction.user.displayName,
       })
       .setTitle(
-        `${interaction.user.displayName}'s bank (${toKMB(totalValue + coins)})`
+        `${interaction.user.displayName}'s bank (${Util.toKMB(
+          totalValue + coins
+        )})`
       )
-      .setDescription(`**Coins | ${toKMB(coins)}**`)
+      .setDescription(`**Coins | ${Util.toKMB(coins)}**`)
       .setFooter({
         text: `Page ${i / interval + 1}/${Math.ceil(
           invData.length / interval
