@@ -78,12 +78,28 @@ export async function stake(p1: User, p2: User, coins?: number) {
 }
 
 export async function sendStakeInvite(
-  ctx: Command,
+  ctx: CommandContext,
   p1: User,
   p2: User,
-  coins: string
+  coins: number
 ) {
   const { interaction } = ctx;
+  const channel = interaction.channel;
+
+  const announceDesc = `${p1} has challenged ${p2} to a stake${
+    coins > 0 ? ` for ${Util.toKMB(coins)} coins!` : `!`
+  }`;
+
+  if (channel?.isSendable()) {
+    await channel.send({
+      embeds: [
+        new EmbedBuilder()
+          .setColor("DarkRed")
+          .setTitle("Stake Challenge")
+          .setDescription(announceDesc),
+      ],
+    });
+  }
 }
 
 export async function confirmStake(
@@ -146,7 +162,15 @@ export async function confirmStake(
           components: [],
         });
       } else if (i.customId === "yes") {
-        // send invite here
+        await sendStakeInvite(ctx, p1, p2, coinsValue);
+        await i.update({
+          embeds: [
+            new EmbedBuilder()
+              .setColor("DarkRed")
+              .setDescription(`Stake request sent.`),
+          ],
+          components: [],
+        });
       }
 
       collector.stop();
@@ -163,6 +187,8 @@ export async function confirmStake(
           components: [],
         });
     });
+  } else {
+    await sendStakeInvite(ctx, p1, p2, 0);
   }
 }
 
