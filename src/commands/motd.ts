@@ -47,9 +47,13 @@ async function handleSet(ctx: MotdContext & { guildId: string }) {
 
   if (msg == null) throw new Error("Error retrieving input message");
   const replaced = await storage.setMotd(guildId, msg);
-  let setMsg = `Successfully set message of the day to: \`${msg}\``;
+  let setMsg = `Successfully set message of the day to: \`${
+    msg.length > 50 ? `${msg.slice(0, 50)}...` : msg
+  }\``;
   if (replaced !== null) {
-    setMsg += `\nReplaced: \`${replaced}\``;
+    setMsg += `\nReplaced: \`${
+      replaced.length > 50 ? `${replaced.slice(0, 50)}...` : replaced
+    }\``;
   }
   await interaction.reply(setMsg);
 }
