@@ -13,6 +13,7 @@ import {
   getClueKey as getRsClueKey,
   getCoinsKey as getRsCoinsKey,
 } from "@commands/rs/_rs_utils.js";
+import { Item } from "oldschooljs";
 
 enum RedisNamespaces {
   GUILDS = "guilds",
@@ -147,6 +148,25 @@ export class RedisStorage implements Storage {
     try {
       const batch = this._client.multi();
       for (const [k, v] of Object.entries(obj)) {
+        batch.hIncrBy(key, k, v);
+      }
+
+      await batch.execAsPipeline();
+    } catch (e) {
+      console.error(e);
+      throw new Error("Failed to write to database!");
+    }
+  }
+
+  private async _hIncrByFieldsBucket(
+    baseKey: string,
+    bucketSize: number,
+    obj: { [id: number]: any }
+  ) {
+    try {
+      const batch = this._client.multi();
+      for (const [k, v] of Object.entries(obj)) {
+        const key = `${baseKey}:${Math.floor(parseInt(k) / bucketSize)}`;
         batch.hIncrBy(key, k, v);
       }
 
@@ -398,6 +418,43 @@ export class RedisStorage implements Storage {
   public async updateCoins(userId: string, change: number) {
     const coinsKey = getRsCoinsKey(userId);
     await this.incrBy(coinsKey, change);
+  }
+
+  public async getCoins(userId: string) {
+    const key = `users:${userId}:rs:coins`;
+    const coins = await this.get(key);
+    if (coins == null) return 0;
+    if (Number.isNaN(parseInt(coins))) return 0;
+
+    return parseInt(coins);
+  }
+
+  public async updateInventory(userId: string, items: [Item, number][]) {
+    const baseKey = `users:${userId}:rs:inv`;
+    const itemsMap: { [id: number]: number } = {};
+    items.forEach((t) => {
+      if (t[0].id != 995) {
+        itemsMap[t[0].id] = t[1];
+      }
+    });
+    await this._hIncrByFieldsBucket(baseKey, 1000, itemsMap);
+  }
+
+  public async getInventory(userId: string): Promise<{ [id: string]: string }> {
+    const baseKey = `users:${userId}:rs:inv:*`;
+    const keys = await this._scan({ match: baseKey });
+
+    const invs: { [id: string]: string }[] = [];
+    for (const key of keys) {
+      if ((await this._client.type(key)) == "hash") {
+        const inv = await this._hGetAll(key);
+        invs.push(inv);
+      }
+    }
+
+    const final: { [id: string]: string } = {};
+    invs.reduce((prev, curr) => Object.assign(prev, curr), final);
+    return final;
   }
 
   public async destroy(): Promise<void> {

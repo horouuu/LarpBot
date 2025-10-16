@@ -1,5 +1,6 @@
 import { OrNullEntries } from "@types-local/util";
 import { DBClueData } from "@commands/rs/_rs_utils";
+import { Item } from "oldschooljs";
 
 const persistedConfigs = ["actionThreshold", "memberRole"] as const;
 type PersistedKey = (typeof persistedConfigs)[number];
@@ -52,11 +53,23 @@ export abstract class Storage {
 
   abstract clearMotd(guildId: string): Promise<void>;
 
-  abstract updateClueData(userId: string, data: DBClueData<number>): Promise<void>;
+  abstract updateClueData(
+    userId: string,
+    data: DBClueData<number>
+  ): Promise<void>;
 
   abstract getClueData(userId: string): Promise<DBClueData<string>>;
 
+  abstract getCoins(userId: string): Promise<number>;
+
   abstract updateCoins(userId: string, change: number): Promise<void>;
+
+  abstract getInventory(userId: string): Promise<{ [id: string]: string }>;
+
+  abstract updateInventory(
+    userId: string,
+    items: [Item, number][]
+  ): Promise<void>;
 }
 
 export type { PersistedKey, PersistedConfigs };

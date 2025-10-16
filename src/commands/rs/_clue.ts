@@ -32,6 +32,8 @@ export async function openClue(ctx: CommandContext) {
   await interaction.reply(
     `You opened a **[${res.name}]** clue scroll!\n${got}\n### Total loot: ${total}`
   );
+
+  await storage.updateInventory(interaction.user.id, rewards);
 }
 
 export async function showClueStats(ctx: CommandContext) {
