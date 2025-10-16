@@ -42,7 +42,7 @@ const rsData = new SlashCommandBuilder()
 async function handleBankPages(
   ctx: CommandContext,
   msg: InteractionCallbackResponse<boolean>,
-  out: Awaited<ReturnType<typeof getInventoryEmbeds>>
+  components: Awaited<ReturnType<typeof getInventoryEmbeds>>
 ) {
   const { interaction } = ctx;
   const collector = msg.resource?.message?.createMessageComponentCollector({
@@ -55,13 +55,10 @@ async function handleBankPages(
 
   let page = 0;
   collector?.on("collect", async (i) => {
-    const deferTimer = setTimeout(
-      () => i.deferUpdate().catch(),
-      2500
-    );
+    const deferTimer = setTimeout(() => i.deferUpdate().catch(), 2500);
     switch (i.customId) {
       case "bank_next":
-        if (page + 1 === out.embeds.length) return;
+        if (page + 1 === components.embeds.length) return;
         page += 1;
         break;
       case "bank_back":
@@ -73,14 +70,14 @@ async function handleBankPages(
     }
 
     const isFirst = page === 0;
-    const isLast = page === out.embeds.length - 1;
+    const isLast = page === components.embeds.length - 1;
 
-    out.actionRow.components[0].setDisabled(isFirst);
-    out.actionRow.components[1].setDisabled(isLast);
+    components.actionRow.components[0].setDisabled(isFirst);
+    components.actionRow.components[1].setDisabled(isLast);
 
     const content = {
-      embeds: [out.embeds[page]],
-      components: [out.actionRow],
+      embeds: [components.embeds[page]],
+      components: [components.actionRow],
     };
     if (i.deferred) {
       await i.editReply(content);
