@@ -76,3 +76,113 @@ export async function stake(p1: User, p2: User, coins?: number) {
     ptr = (ptr + 1) % 2;
   }
 }
+
+export async function sendStakeInvite(
+  ctx: Command,
+  p1: User,
+  p2: User,
+  coins: string
+) {
+  const { interaction } = ctx;
+}
+
+export async function confirmStake(
+  ctx: CommandContext,
+  p1: User,
+  p2: User,
+  coins: string
+) {
+  const { interaction, storage } = ctx;
+  const coinsValue = fromKMB(coins);
+  const p1Coins = await storage.getCoins(p1.id);
+  if (p1Coins < coinsValue)
+    return await interaction.reply({
+      content: `You do not have enough coins to do this stake.\nRequested: ${Util.toKMB(
+        coinsValue
+      )}\nYour coins: ${Util.toKMB(p1Coins)}`,
+      flags: MessageFlags.Ephemeral,
+    });
+
+  if (coinsValue > 0) {
+    const confirmEmbed = new EmbedBuilder()
+      .setColor("DarkRed")
+      .setDescription(
+        `Are you sure you want to stake ${p2} for ${Util.toKMB(
+          coinsValue
+        )} coins?`
+      );
+
+    const actionRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
+      new ButtonBuilder()
+        .setCustomId("yes")
+        .setLabel("Yes")
+        .setStyle(ButtonStyle.Primary),
+      new ButtonBuilder()
+        .setCustomId("no")
+        .setLabel("No")
+        .setStyle(ButtonStyle.Primary)
+    );
+
+    const msg = await interaction.reply({
+      embeds: [confirmEmbed],
+      components: [actionRow],
+      flags: [MessageFlags.Ephemeral],
+      withResponse: true,
+    });
+
+    const collector = msg.resource?.message?.createMessageComponentCollector({
+      time: 15000,
+      componentType: ComponentType.Button,
+    });
+
+    collector?.on("collect", async (i) => {
+      if (i.customId === "no") {
+        await i.update({
+          embeds: [
+            new EmbedBuilder()
+              .setColor("DarkRed")
+              .setDescription(`Stake request cancelled.`),
+          ],
+          components: [],
+        });
+      } else if (i.customId === "yes") {
+        // send invite here
+      }
+
+      collector.stop();
+    });
+
+    collector?.on("end", async (_, reason) => {
+      if (reason === "time")
+        await interaction.editReply({
+          embeds: [
+            new EmbedBuilder()
+              .setColor("DarkRed")
+              .setDescription(`Stake expired.`),
+          ],
+          components: [],
+        });
+    });
+  }
+}
+
+export async function startStake(ctx: CommandContext) {
+  const { interaction } = ctx;
+  const p1 = interaction.user;
+  const p2 = interaction.options.getUser("opponent");
+  const coins = interaction.options.getString("stake") ?? "0";
+  const parsedCoins = Util.fromKMB(coins);
+
+  if (Number.isNaN(parsedCoins))
+    return await interaction.reply({
+      content: `${coins} is not a valid input for the stake amount.`,
+      flags: [MessageFlags.Ephemeral],
+    });
+  if (!p2)
+    return await interaction.reply({
+      content: "You must specify an opponent to stake.",
+      flags: [MessageFlags.Ephemeral],
+    });
+
+  await confirmStake(ctx, p1, p2, coins);
+}
