@@ -1,7 +1,6 @@
 import { CommandContext } from "@types-local/commands";
 import {
   ComponentType,
-  InteractionCallback,
   InteractionCallbackResponse,
   SlashCommandBuilder,
 } from "discord.js";
@@ -55,7 +54,10 @@ async function handleBankPages(
 
   let page = 0;
   collector?.on("collect", async (i) => {
-    const deferTimer = setTimeout(() => i.deferUpdate().catch(), 2500);
+    const deferTimer = setTimeout(
+      () => i.deferUpdate().catch((e) => console.error("")),
+      2500
+    );
     switch (i.customId) {
       case "bank_next":
         if (page + 1 === components.embeds.length) return;
@@ -113,7 +115,7 @@ const rs = {
           const out = await getInventoryEmbeds(ctx);
           if (out.embeds.length === 0)
             return await interaction.reply("You have no items!");
-          
+
           const msg = await interaction.reply({
             embeds: [out.embeds[0]],
             components: [out.actionRow],

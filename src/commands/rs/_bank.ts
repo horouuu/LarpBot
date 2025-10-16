@@ -12,6 +12,8 @@ import { toKMB } from "oldschooljs/dist/util";
 export async function getInventoryEmbed(ctx: CommandContext) {
   const { interaction, storage } = ctx;
   const inv = await storage.getInventory(interaction.user.id);
+  const coins = await storage.getCoins(interaction.user.id);
+
   const invEntries = Object.entries(inv).map((entry) => {
     const item = Items.find((_, k) => parseInt(entry[0]) == k);
     return [item ?? null, entry[1]] as [Item | null, string];
@@ -52,10 +54,15 @@ export async function getInventoryEmbed(ctx: CommandContext) {
         iconURL: interaction.user.avatarURL() ?? "",
         name: interaction.user.displayName,
       })
-      .setTitle(`${interaction.user.displayName}'s bank (${toKMB(totalValue)})`)
-      .setDescription(
-        `Page ${i / interval + 1}/${Math.ceil(invData.length / interval)}`
+      .setTitle(
+        `${interaction.user.displayName}'s bank (${toKMB(totalValue + coins)})`
       )
+      .setDescription(`**Coins | ${toKMB(coins)}**`)
+      .setFooter({
+        text: `Page ${i / interval + 1}/${Math.ceil(
+          invData.length / interval
+        )}`,
+      })
       .addFields(invData.slice(i, i + interval))
       .setColor("DarkGold");
 

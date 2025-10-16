@@ -420,11 +420,20 @@ export class RedisStorage implements Storage {
     await this.incrBy(coinsKey, change);
   }
 
+  public async getCoins(userId: string) {
+    const key = `users:${userId}:rs:coins`;
+    const coins = await this.get(key);
+    if (coins == null) return 0;
+    if (Number.isNaN(parseInt(coins))) return 0;
+
+    return parseInt(coins);
+  }
+
   public async updateInventory(userId: string, items: [Item, number][]) {
     const baseKey = `users:${userId}:rs:inv`;
     const itemsMap: { [id: number]: number } = {};
     items.forEach((t) => {
-      if (itemsMap[t[0].id] != 995) {
+      if (t[0].id != 995) {
         itemsMap[t[0].id] = t[1];
       }
     });

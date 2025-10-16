@@ -60,6 +60,8 @@ export abstract class Storage {
 
   abstract getClueData(userId: string): Promise<DBClueData<string>>;
 
+  abstract getCoins(userId: string): Promise<number>;
+
   abstract updateCoins(userId: string, change: number): Promise<void>;
 
   abstract getInventory(userId: string): Promise<{ [id: string]: string }>;
