@@ -5,6 +5,7 @@ import { catchAllInteractionReply } from "@utils";
 import { killMonster } from "./rs/_kill.js";
 import { getInventoryEmbeds, handleBankPages } from "./rs/_bank.js";
 import { stake, startStake } from "./rs/_stake.js";
+import { checkBalance } from "./rs/_balance.js";
 
 const rsData = new SlashCommandBuilder()
   .setName("rs")
@@ -48,6 +49,9 @@ const rsData = new SlashCommandBuilder()
           .setDescription("Amount of gold to stake")
           .setRequired(false)
       )
+  )
+  .addSubcommand((opt) =>
+    opt.setName("balance").setDescription("Check your coin balance.")
   );
 
 const rs = {
@@ -84,6 +88,9 @@ const rs = {
           break;
         case "stake":
           await startStake(ctx);
+          break;
+        case "balance":
+          await checkBalance(ctx);
           break;
         default:
           throw new Error("Invalid input.");
