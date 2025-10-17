@@ -1,5 +1,6 @@
 import { Command, CommandContext } from "@types-local/commands";
 import {
+  ActionRow,
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
@@ -88,16 +89,39 @@ export async function sendStakeInvite(
 
   const announceDesc = `${p1} has challenged ${p2} to a stake${
     coins > 0 ? ` for ${Util.toKMB(coins)} coins!` : `!`
-  }`;
+  }\n**Do you accept?**`;
 
   if (channel?.isSendable()) {
-    await channel.send({
+    const msg = await channel.send({
       embeds: [
         new EmbedBuilder()
           .setColor("DarkRed")
-          .setTitle("Stake Challenge")
+          .setTitle(`Challenge to ${p2.displayName}`)
           .setDescription(announceDesc),
       ],
+      components: [
+        new ActionRowBuilder<ButtonBuilder>().addComponents(
+          new ButtonBuilder()
+            .setCustomId("accept")
+            .setLabel("Accept")
+            .setStyle(ButtonStyle.Success),
+          new ButtonBuilder()
+            .setCustomId("decline")
+            .setLabel("Decline")
+            .setStyle(ButtonStyle.Danger)
+        ),
+      ],
+    });
+
+    const collector = msg.createMessageComponentCollector({
+      filter: (i) => i.user.id === p2.id,
+      time: 15000,
+      componentType: ComponentType.Button,
+    });
+  } else {
+    return await interaction.reply({
+      content: "Something went wrong.",
+      flags: MessageFlags.Ephemeral,
     });
   }
 }
@@ -189,6 +213,15 @@ export async function confirmStake(
     });
   } else {
     await sendStakeInvite(ctx, p1, p2, 0);
+    await interaction.reply({
+      embeds: [
+        new EmbedBuilder()
+          .setColor("DarkRed")
+          .setDescription(`Stake request sent.`),
+      ],
+      components: [],
+      flags: [MessageFlags.Ephemeral],
+    });
   }
 }
 
