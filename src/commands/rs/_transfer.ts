@@ -102,13 +102,14 @@ export async function transferCoins(
 
     collector.on("end", async (_, reason) => {
       if (reason === "time") {
-        await interaction.reply({
+        await interaction.editReply({
           embeds: [
             new EmbedBuilder()
+              .setTitle(`Transfer to ${p2.displayName}`)
               .setColor("DarkRed")
               .setDescription(`Transfer expired.`),
           ],
-          flags: [MessageFlags.Ephemeral],
+          components: [],
         });
       }
     });
