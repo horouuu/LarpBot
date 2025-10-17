@@ -6,6 +6,7 @@ import { killMonster } from "./rs/_kill.js";
 import { getInventoryEmbeds, handleBankPages } from "./rs/_bank.js";
 import { stake, startStake } from "./rs/_stake.js";
 import { checkBalance } from "./rs/_balance.js";
+import { transferCoins } from "./rs/_transfer.js";
 
 const rsData = new SlashCommandBuilder()
   .setName("rs")
@@ -52,6 +53,23 @@ const rsData = new SlashCommandBuilder()
   )
   .addSubcommand((opt) =>
     opt.setName("balance").setDescription("Check your coin balance.")
+  )
+  .addSubcommand((opt) =>
+    opt
+      .setName("transfer")
+      .setDescription("Transfer coins to another user.")
+      .addUserOption((opt) =>
+        opt
+          .setName("recipient")
+          .setDescription("User to transfer coins to.")
+          .setRequired(true)
+      )
+      .addStringOption((opt) =>
+        opt
+          .setName("amount")
+          .setDescription("Amount of coins to transfer.")
+          .setRequired(true)
+      )
   );
 
 const rs = {
@@ -91,6 +109,22 @@ const rs = {
           break;
         case "balance":
           await checkBalance(ctx);
+          break;
+        case "transfer":
+          const p1 = interaction.user;
+          const p2 = interaction.options.getUser("recipient");
+          const amount = interaction.options.getString("amount");
+
+          if (!p2)
+            return await interaction.reply(
+              "You must indicate a recipient to transfer coins to."
+            );
+          if (!amount)
+            return await interaction.reply(
+              "You must indicate an amount to transfer."
+            );
+
+          await transferCoins(ctx, p1, p2, amount);
           break;
         default:
           throw new Error("Invalid input.");
