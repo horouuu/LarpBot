@@ -60,7 +60,7 @@ export async function getInventoryEmbeds(ctx: CommandContext) {
           totalValue + coins
         )})`
       )
-      .setDescription(`**Coins | ${Util.toKMB(coins)}**`)
+      .setDescription(`**Coins | ${coins.toLocaleString()}**`)
       .setFooter({
         text: `Page ${i / interval + 1}/${Math.ceil(
           invData.length / interval
