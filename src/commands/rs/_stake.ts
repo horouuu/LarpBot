@@ -152,7 +152,8 @@ export async function sendStakeInvite(
       if (i.customId === "accept") {
         if (coins > 0) {
           const p2coins = await storage.getCoins(p2.id);
-          if (p2coins < coins)
+          if (p2coins < coins) {
+            collector.stop();
             return await i.update({
               embeds: [
                 new EmbedBuilder()
@@ -164,6 +165,7 @@ export async function sendStakeInvite(
               ],
               components: [],
             });
+          }
         }
         const { players, resultBars } = stake(p1, p2);
         const p1Emoji =
@@ -210,8 +212,6 @@ export async function sendStakeInvite(
             });
           }
         }
-
-        collector.stop();
       } else if (i.customId === "decline") {
         await i.update({
           embeds: [
@@ -222,9 +222,8 @@ export async function sendStakeInvite(
           ],
           components: [],
         });
-
-        collector.stop();
       }
+      collector.stop();
     });
 
     collector.on("ignore", async (i) => {
