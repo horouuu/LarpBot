@@ -1,6 +1,5 @@
-import { Command, CommandContext } from "@types-local/commands";
+import { CommandContext } from "@types-local/commands";
 import {
-  ActionRow,
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
@@ -10,7 +9,6 @@ import {
   User,
 } from "discord.js";
 import { Util } from "oldschooljs";
-import { fromKMB } from "oldschooljs/dist/util";
 
 type StyleBonuses = {
   attack: number;
@@ -265,7 +263,7 @@ export async function confirmStake(
   coins: string
 ) {
   const { interaction, storage } = ctx;
-  const coinsValue = fromKMB(coins);
+  const coinsValue = Util.fromKMB(coins);
   const p1Coins = await storage.getCoins(p1.id);
   if (p1Coins < coinsValue)
     return await interaction.reply({
