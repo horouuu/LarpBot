@@ -112,7 +112,9 @@ export async function sendStakeInvite(
   const { interaction, storage } = ctx;
   const channel = interaction.channel;
 
-  const announceDesc = `${p1} has challenged ${p2} to a stake${
+  const announceDesc = `${p1} has challenged ${p2} to a ${
+    coins > 0 ? "stake" : "duel"
+  }${
     coins > 0 ? ` **for ${Util.toKMB(coins)} coins!**` : `!`
   }\n**Do you accept?**`;
 
@@ -120,7 +122,7 @@ export async function sendStakeInvite(
     const msg = await channel.send({
       embeds: [
         new EmbedBuilder()
-          .setColor("DarkRed")
+          .setColor(coins > 0 ? "DarkRed" : "DarkAqua")
           .setTitle(`Challenge to ${p2.displayName}`)
           .setDescription(announceDesc),
       ],
