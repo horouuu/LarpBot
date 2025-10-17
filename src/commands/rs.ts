@@ -4,7 +4,7 @@ import { openClue, showClueStats } from "./rs/_clue.js";
 import { catchAllInteractionReply } from "@utils";
 import { killMonster } from "./rs/_kill.js";
 import { getInventoryEmbeds, handleBankPages } from "./rs/_bank.js";
-import { stake } from "./rs/_stake.js";
+import { stake, startStake } from "./rs/_stake.js";
 
 const rsData = new SlashCommandBuilder()
   .setName("rs")
@@ -31,10 +31,24 @@ const rsData = new SlashCommandBuilder()
           .setRequired(true)
       )
   )
+  .addSubcommand((opt) => opt.setName("bank").setDescription("View your bank."))
   .addSubcommand((opt) =>
-    opt.setName("bank").setDescription("View your bank.")
+    opt
+      .setName("stake")
+      .setDescription("Simulates a stake between you and another player.")
+      .addUserOption((opt) =>
+        opt
+          .setName("opponent")
+          .setDescription("Person to challenge as your opponent.")
+          .setRequired(true)
+      )
+      .addStringOption((opt) =>
+        opt
+          .setName("stake")
+          .setDescription("Amount of gold to stake")
+          .setRequired(false)
+      )
   );
-
 
 const rs = {
   ...rsData.toJSON(),
@@ -67,6 +81,9 @@ const rs = {
           });
 
           await handleBankPages(ctx, msg, out);
+          break;
+        case "stake":
+          await startStake(ctx);
           break;
         default:
           throw new Error("Invalid input.");
