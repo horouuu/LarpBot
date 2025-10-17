@@ -8,7 +8,6 @@ import {
   ButtonStyle,
   ComponentType,
   EmbedBuilder,
-  InteractionCallback,
   MessageFlags,
   User,
 } from "discord.js";
@@ -32,21 +31,26 @@ const metadata: MonsterMetaData = {
   },
 };
 
-async function killTeamMonster(ctx: CommandContext, monster: Monster) {
-  const { interaction, storage } = ctx;
+function renderActiveParty(
+  partyLead: User,
+  partyMems: User[],
+  monster: Monster
+) {
   const { partySizes, cooldowns } = metadata[monster.id];
   const cdList = partySizes
     .map((e, i) => `${e}: ${cooldowns[i] / 60} minutes`)
     .join("\n");
 
-  const partyMems: User[] = [];
-  const msg = await interaction.reply({
+  const newMems = partyMems.map((pm) => `- ${pm}`);
+  return {
     embeds: [
       new EmbedBuilder()
         .setColor("Aqua")
-        .setTitle(`${monster.name}: ${interaction.user.displayName}'s party`)
+        .setTitle(`${monster.name}: ${partyLead.displayName}'s party`)
         .setDescription(
-          `You have opted to kill a team boss.\nThis boss can be killed in parties of: ${partySizes}.\n\nThe following are the cooldowns incurred by each party size:\n${cdList}\n\n**Members**\n- ${interaction.user} (leader)`
+          `You have opted to kill a team boss.\nThis boss can be killed in parties of: ${partySizes}.\n\nThe following are the cooldowns incurred by each party size:\n${cdList}\n\n**Members**\n- ${partyLead} (leader)${
+            newMems.length > 0 ? `\n${newMems}` : ""
+          }`
         ),
     ],
     components: [
@@ -58,12 +62,25 @@ async function killTeamMonster(ctx: CommandContext, monster: Monster) {
         ...partyMems.map((p) =>
           new ButtonBuilder()
             .setCustomId(p.id)
-            .setLabel(`Remove ${p}`)
+            .setLabel(`Remove ${p.displayName}`)
             .setStyle(ButtonStyle.Danger)
-        )
+        ),
+        new ButtonBuilder()
+          .setCustomId("disband")
+          .setLabel("Disband")
+          .setStyle(ButtonStyle.Secondary)
       ),
     ],
-  });
+  };
+}
+
+async function killTeamMonster(ctx: CommandContext, monster: Monster) {
+  const { interaction, storage } = ctx;
+  const { partySizes, cooldowns } = metadata[monster.id];
+  const partyMems: User[] = [];
+  const msg = await interaction.reply(
+    renderActiveParty(interaction.user, partyMems, monster)
+  );
 
   const collector = msg.createMessageComponentCollector({
     filter: (i) => !i.user.bot,
@@ -80,34 +97,29 @@ async function killTeamMonster(ctx: CommandContext, monster: Monster) {
         });
       } else {
         partyMems.push(i.user);
-        const newMems = partyMems.map((pm) => `- ${pm}`);
-        return await i.update({
-          embeds: [
-            new EmbedBuilder()
-              .setColor("Aqua")
-              .setTitle(
-                `${monster.name}: ${interaction.user.displayName}'s party`
-              )
-              .setDescription(
-                `You have opted to kill a team boss.\nThis boss can be killed in parties of: ${partySizes}.\n\nThe following are the cooldowns incurred by each party size:\n${cdList}\n\n**Members**\n- ${interaction.user} (leader)\n${newMems}`
-              ),
-          ],
-          components: [
-            new ActionRowBuilder<ButtonBuilder>().addComponents(
-              new ButtonBuilder()
-                .setCustomId("join")
-                .setLabel("Join")
-                .setStyle(ButtonStyle.Success),
-              ...partyMems.map((p) =>
-                new ButtonBuilder()
-                  .setCustomId(p.id)
-                  .setLabel(`Remove ${p.displayName}`)
-                  .setStyle(ButtonStyle.Danger)
-              )
-            ),
-          ],
-        });
+        return await i.update(
+          renderActiveParty(interaction.user, partyMems, monster)
+        );
       }
+    } else if (i.customId === "disband") {
+      if (i.user.id !== interaction.user.id)
+        return await i.reply({
+          content: "Only the party leader may disband the party.",
+          flags: [MessageFlags.Ephemeral],
+        });
+
+      await i.update({
+        embeds: [
+          new EmbedBuilder()
+            .setColor("DarkRed")
+            .setTitle(
+              `${monster.name}: ${interaction.user.displayName}'s party`
+            )
+            .setDescription("Party disbanded."),
+        ],
+        components: [],
+      });
+      return collector.stop();
     } else {
       if (i.user.id !== interaction.user.id) {
         return await i.reply({
@@ -123,33 +135,9 @@ async function killTeamMonster(ctx: CommandContext, monster: Monster) {
         });
 
       partyMems.splice(idx, 1);
-      const newMems = partyMems.map((pm) => `- ${pm}`);
-      return await i.update({
-        embeds: [
-          new EmbedBuilder()
-            .setColor("Aqua")
-            .setTitle(
-              `${monster.name}: ${interaction.user.displayName}'s party`
-            )
-            .setDescription(
-              `You have opted to kill a team boss.\nThis boss can be killed in parties of: ${partySizes}.\n\nThe following are the cooldowns incurred by each party size:\n${cdList}\n\n**Members**\n- ${interaction.user} (leader)\n${newMems}`
-            ),
-        ],
-        components: [
-          new ActionRowBuilder<ButtonBuilder>().addComponents(
-            new ButtonBuilder()
-              .setCustomId("join")
-              .setLabel("Join")
-              .setStyle(ButtonStyle.Success),
-            ...partyMems.map((p) =>
-              new ButtonBuilder()
-                .setCustomId(p.id)
-                .setLabel(`Remove ${p.displayName}`)
-                .setStyle(ButtonStyle.Danger)
-            )
-          ),
-        ],
-      });
+      return await i.update(
+        renderActiveParty(interaction.user, partyMems, monster)
+      );
     }
   });
 }
