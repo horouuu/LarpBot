@@ -100,6 +100,13 @@ export async function transferCoins(
       collector.stop();
     });
 
+    collector.on("ignore", async (i) => {
+      await i.reply({
+        content: "Only the issuer of the transfer can confirm or rescind it.",
+        flags: [MessageFlags.Ephemeral],
+      });
+    });
+
     collector.on("end", async (_, reason) => {
       if (reason === "time") {
         await interaction.editReply({
