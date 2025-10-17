@@ -18,7 +18,16 @@ type StyleBonuses = {
   defence: number;
 };
 
-export async function stake(p1: User, p2: User, coins?: number) {
+enum StakeEmoji {
+  HP_CRITICAL = "🟥",
+  HP_DANGER = "🟧",
+  HP_SAFE = "🟩",
+  HP_DEPLETED = "⬛",
+  P_LOSER = "💀",
+  P_WINNER = "🏆",
+}
+
+export function stake(p1: User, p2: User) {
   const styleBonuses: StyleBonuses = {
     attack: 0,
     strength: 3,
@@ -76,6 +85,24 @@ export async function stake(p1: User, p2: User, coins?: number) {
     logs.push(`${users[ptr]} hit ${users[(ptr + 1) % 2]} for ${dmg} damage!`);
     ptr = (ptr + 1) % 2;
   }
+
+  const resultBars = players.map((hp) => {
+    const ratio = Math.max(hp / 99, 0);
+    let emoji = StakeEmoji.HP_CRITICAL;
+    if (ratio >= 0.75) {
+      emoji = StakeEmoji.HP_SAFE;
+    } else if (ratio > 0.25) {
+      emoji = StakeEmoji.HP_DANGER;
+    }
+
+    const hpBar =
+      emoji.repeat(Math.ceil(ratio * 10)) +
+      StakeEmoji.HP_DEPLETED.repeat(10 - Math.ceil(ratio * 10));
+
+    return hpBar;
+  });
+
+  return { players, logs, resultBars };
 }
 
 export async function sendStakeInvite(
@@ -84,11 +111,11 @@ export async function sendStakeInvite(
   p2: User,
   coins: number
 ) {
-  const { interaction } = ctx;
+  const { interaction, storage } = ctx;
   const channel = interaction.channel;
 
   const announceDesc = `${p1} has challenged ${p2} to a stake${
-    coins > 0 ? ` for ${Util.toKMB(coins)} coins!` : `!`
+    coins > 0 ? ` **for ${Util.toKMB(coins)} coins!**` : `!`
   }\n**Do you accept?**`;
 
   if (channel?.isSendable()) {
@@ -111,12 +138,116 @@ export async function sendStakeInvite(
             .setStyle(ButtonStyle.Danger)
         ),
       ],
+      allowedMentions: { parse: ["users"] },
     });
 
     const collector = msg.createMessageComponentCollector({
       filter: (i) => i.user.id === p2.id,
       time: 15000,
       componentType: ComponentType.Button,
+    });
+
+    if (!msg.inGuild())
+      return await interaction.editReply("Something went wrong.");
+
+    collector.on("collect", async (i) => {
+      if (i.customId === "accept") {
+        if (coins > 0) {
+          const p2coins = await storage.getCoins(p2.id);
+          if (p2coins < coins)
+            return await i.update({
+              embeds: [
+                new EmbedBuilder()
+                  .setColor("DarkRed")
+                  .setTitle(`Challenge to ${p2.displayName}`)
+                  .setDescription(
+                    `${p2} does not have enough coins to accept the stake.`
+                  ),
+              ],
+              components: [],
+            });
+        }
+        const { players, resultBars } = stake(p1, p2);
+        const p1Emoji =
+          players[0] > players[1] ? StakeEmoji.P_WINNER : StakeEmoji.P_LOSER;
+
+        const p2Emoji =
+          players[1] > players[0] ? StakeEmoji.P_WINNER : StakeEmoji.P_LOSER;
+        await i.update({
+          embeds: [
+            new EmbedBuilder()
+              .setColor("DarkGreen")
+              .setTitle(
+                `${
+                  players[0] > players[1] ? p1.displayName : p2.displayName
+                } won!`
+              )
+              .setDescription(
+                `**Results**\n${p1}\n${p1Emoji} ${resultBars[0]}\n\n${p2}\n${p2Emoji} ${resultBars[1]}`
+              ),
+          ],
+          components: [],
+          allowedMentions: { parse: ["users"] },
+        });
+
+        const winner = players[0] > players[1] ? p1 : p2;
+        const loser = players[0] > players[1] ? p2 : p1;
+
+        if (coins > 0) {
+          await storage.updateCoins(winner.id, coins);
+          await storage.updateCoins(loser.id, coins * -1);
+          const channel = interaction.channel;
+          if (channel?.isSendable()) {
+            await channel.send({
+              embeds: [
+                new EmbedBuilder()
+                  .setColor("DarkGold")
+                  .setDescription(
+                    `Withdrew ${Util.toKMB(
+                      coins
+                    )} coins from ${loser}'s bank and gave it to ${winner}.`
+                  ),
+              ],
+            });
+          }
+        }
+
+        collector.stop();
+      } else if (i.customId === "decline") {
+        await i.update({
+          embeds: [
+            new EmbedBuilder()
+              .setColor("DarkRed")
+              .setTitle(`Challenge to ${p2.displayName}`)
+              .setDescription(`Challenge declined by ${p2}.`),
+          ],
+          components: [],
+        });
+
+        collector.stop();
+      }
+    });
+
+    collector.on("ignore", async (i) => {
+      await i.reply({
+        content:
+          "Only the person to whom the stake was issued can accept or decline the challenge.",
+        flags: [MessageFlags.Ephemeral],
+      });
+    });
+
+    collector.on("end", async (_, reason) => {
+      if (reason === "time") {
+        await msg.edit({
+          embeds: [
+            new EmbedBuilder()
+              .setColor("DarkRed")
+              .setTitle(`Challenge to ${p2.displayName}`)
+              .setDescription("Challenge expired."),
+          ],
+          components: [],
+        });
+      }
     });
   } else {
     return await interaction.reply({
@@ -156,11 +287,11 @@ export async function confirmStake(
       new ButtonBuilder()
         .setCustomId("yes")
         .setLabel("Yes")
-        .setStyle(ButtonStyle.Primary),
+        .setStyle(ButtonStyle.Success),
       new ButtonBuilder()
         .setCustomId("no")
         .setLabel("No")
-        .setStyle(ButtonStyle.Primary)
+        .setStyle(ButtonStyle.Danger)
     );
 
     const msg = await interaction.reply({
@@ -240,6 +371,12 @@ export async function startStake(ctx: CommandContext) {
   if (!p2)
     return await interaction.reply({
       content: "You must specify an opponent to stake.",
+      flags: [MessageFlags.Ephemeral],
+    });
+
+  if (p1.id === p2.id)
+    return await interaction.reply({
+      content: "You cannot stake yourself!",
       flags: [MessageFlags.Ephemeral],
     });
 
