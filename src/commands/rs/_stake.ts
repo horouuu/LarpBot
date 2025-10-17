@@ -208,6 +208,7 @@ export async function sendStakeInvite(
                     )} coins from ${loser}'s bank and gave it to ${winner}.`
                   ),
               ],
+              allowedMentions: { parse: ["users"] },
             });
           }
         }
