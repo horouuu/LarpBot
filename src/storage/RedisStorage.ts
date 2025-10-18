@@ -144,6 +144,21 @@ export class RedisStorage implements Storage {
     }
   }
 
+  private async _hGet(key: string, field: string) {
+    try {
+      if (!this._checkType(key, RedisTypes.HASH)) {
+        throw new Error(
+          `ERROR: Attempted to get hash value at key storing non-hash value ${key}`
+        );
+      }
+
+      return await this._client.hGet(key, field);
+    } catch (e) {
+      console.error(e);
+      throw new Error("Failed to write to database!");
+    }
+  }
+
   private async _hIncrByFields(key: string, obj: Object) {
     try {
       const batch = this._client.multi();
@@ -455,6 +470,42 @@ export class RedisStorage implements Storage {
     const final: { [id: string]: string } = {};
     invs.reduce((prev, curr) => Object.assign(prev, curr), final);
     return final;
+  }
+
+  public async setKillCd(
+    userId: string,
+    monsterId: number,
+    cdSecs: number
+  ): Promise<void> {
+    const key = `users:${userId}:rs:cooldowns:monsters`;
+    await this._hIncrByFields(key, { [monsterId]: 1 });
+    try {
+      await this._client.sendCommand([
+        "HEXPIRE",
+        key,
+        cdSecs.toString(),
+        "FIELDS",
+        "1",
+        monsterId.toString(),
+      ]);
+    } catch (e) {
+      console.error(e);
+      throw new Error("Failed to set expiry in DB.");
+    }
+  }
+
+  public async checkKillCd(userId: string, monsterId: number) {
+    const key = `users:${userId}:rs:cooldowns:monsters`;
+    const cdNum = await this._hGet(key, monsterId.toString());
+    if (cdNum === null || Number.isNaN(parseInt(cdNum))) return 0;
+    try {
+      const ttl = await this._client.HTTL(key, monsterId.toString());
+      if (ttl === null || ttl[0] < 0) return 0;
+      return parseInt(cdNum) * ttl[0];
+    } catch (e) {
+      console.error(e);
+      throw new Error("Failed to check kill cd through DB.");
+    }
   }
 
   public async destroy(): Promise<void> {

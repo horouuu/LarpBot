@@ -66,6 +66,14 @@ export abstract class Storage {
 
   abstract getInventory(userId: string): Promise<{ [id: string]: string }>;
 
+  abstract setKillCd(
+    userId: string,
+    monsterId: number,
+    cdSecs: number
+  ): Promise<void>;
+
+  abstract checkKillCd(userId: string, monsterId: number): Promise<number>;
+
   abstract updateInventory(
     userId: string,
     items: [Item, number][]
