@@ -187,7 +187,9 @@ async function killTeamMonster(ctx: CommandContext, monster: Monster) {
       );
 
       const onCd = cds.flatMap((cd) =>
-        cd[0] > 0 ? [`${cd[1]}: ${Math.floor(cd[0] / 60)} minutes`] : []
+        cd[0] > 0
+          ? [`${cd[1]}: ${Math.floor(cd[0] / 60)} mins ${cd[0] % 60} secs`]
+          : []
       );
 
       if (onCd.length > 0) {
@@ -282,7 +284,9 @@ export async function killMonster(ctx: CommandContext) {
     return await interaction.reply({
       content: `You are currently on cooldown for monster: ${
         found.name
-      }.\nYou can try again in ${Math.floor(cooldown / 60)} minutes.`,
+      }.\nYou can try again in \`${Math.floor(cooldown / 60)} minutes and ${
+        cooldown % 60
+      } seconds.\``,
       flags: [MessageFlags.Ephemeral],
     });
   }
