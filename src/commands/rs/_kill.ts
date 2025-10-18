@@ -8,6 +8,7 @@ import {
   ButtonStyle,
   ComponentType,
   EmbedBuilder,
+  Message,
   MessageFlags,
   User,
 } from "discord.js";
@@ -147,6 +148,28 @@ async function killTeamMonster(ctx: CommandContext, monster: Monster) {
         });
       }
 
+      const cds: [number, User][] = await Promise.all(
+        [interaction.user, ...partyMems].map(async (pm) => [
+          await storage.checkKillCd(pm.id, monster.id),
+          pm,
+        ])
+      );
+
+      console.log(cds);
+
+      const onCd = cds.flatMap((cd) =>
+        cd[0] > 0 ? [`${cd[1]}: ${Math.floor(cd[0] / 60)} minutes`] : []
+      );
+
+      if (onCd.length > 0) {
+        return await i.reply({
+          content: `The following members are on cooldown for ${
+            monster.name
+          }:\n${onCd.join("\n")}`,
+          flags: [MessageFlags.Ephemeral],
+        });
+      }
+
       const rewards = monster.kill(1, {}).items();
       const { got, total, totalRaw } = parseLoot(rewards);
       const giveRewardsTo = [
@@ -224,11 +247,12 @@ export async function killMonster(ctx: CommandContext) {
   const cooldown = await storage.checkKillCd(interaction.user.id, found.id);
 
   if (cooldown > 0) {
-    return await interaction.reply(
-      `You are currently on cooldown for monster: ${
+    return await interaction.reply({
+      content: `You are currently on cooldown for monster: ${
         found.name
-      }.\nYou can try again in ${cooldown / 60} minutes.`
-    );
+      }.\nYou can try again in ${Math.floor(cooldown / 60)} minutes.`,
+      flags: [MessageFlags.Ephemeral],
+    });
   }
 
   if (found.id in metadata) {
