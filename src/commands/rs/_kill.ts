@@ -48,7 +48,7 @@ function renderActiveParty(
     .map((e, i) => `${e}: ${cooldowns[i] / 60} minutes`)
     .join("\n");
 
-  const newMems = partyMems.map((pm) => `- ${pm}`);
+  const newMems = partyMems.map((pm) => `- ${pm}`).join("\n");
   return {
     embeds: [
       new EmbedBuilder()
