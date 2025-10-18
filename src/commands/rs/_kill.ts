@@ -71,12 +71,6 @@ function renderActiveParty(
           .setLabel("Join")
           .setStyle(ButtonStyle.Success)
           .setDisabled(partyFull),
-        ...partyMems.map((p) =>
-          new ButtonBuilder()
-            .setCustomId(p.id)
-            .setLabel(`Remove ${p.displayName}`)
-            .setStyle(ButtonStyle.Danger)
-        ),
         new ButtonBuilder()
           .setCustomId("disband")
           .setLabel("Disband")
@@ -87,7 +81,17 @@ function renderActiveParty(
           .setStyle(ButtonStyle.Primary)
           .setDisabled(!partyMinMet)
       ),
-    ],
+      partyMems.length > 0
+        ? new ActionRowBuilder<ButtonBuilder>().addComponents(
+            ...partyMems.map((p) =>
+              new ButtonBuilder()
+                .setCustomId(Math.random().toString())
+                .setLabel(`Remove ${p.displayName}`)
+                .setStyle(ButtonStyle.Danger)
+            )
+          )
+        : null,
+    ].filter((r) => r !== null),
   };
 }
 
