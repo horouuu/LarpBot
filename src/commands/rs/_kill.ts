@@ -85,7 +85,7 @@ function renderActiveParty(
         ? new ActionRowBuilder<ButtonBuilder>().addComponents(
             ...partyMems.map((p) =>
               new ButtonBuilder()
-                .setCustomId(Math.random().toString())
+                .setCustomId(p.id)
                 .setLabel(`Remove ${p.displayName}`)
                 .setStyle(ButtonStyle.Danger)
             )
