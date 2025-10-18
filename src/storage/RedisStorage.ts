@@ -47,9 +47,22 @@ function decodeValueFromKey(
 
 export class RedisStorage implements Storage {
   private _client: ReturnType<typeof createClient>;
+  private _inMemory: { [key: string]: string | null } = {};
 
   private constructor(client: typeof this._client) {
     this._client = client;
+  }
+
+  public getInMemory(key: string): string | null {
+    return this._inMemory[key] ?? null;
+  }
+
+  public setInMemory(key: string, value: string) {
+    this._inMemory[key] = value;
+  }
+
+  public delInMemory(key: string) {
+    this._inMemory[key] = null;
   }
 
   public static async create(config: ConfigType) {

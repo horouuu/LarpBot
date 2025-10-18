@@ -17,6 +17,10 @@ type RetrievedGatekept = {
   channelId: string;
 };
 export abstract class Storage {
+  abstract getInMemory(key: string): string | null;
+  abstract setInMemory(key: string, value: string): void;
+  abstract delInMemory(key: string): void;
+
   abstract registerConfig<T extends PersistedKey>(
     guildId: string,
     config: {
