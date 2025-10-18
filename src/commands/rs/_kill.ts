@@ -23,6 +23,7 @@ type MonsterMetaData = {
   };
 };
 
+// partySizes and cooldowns must have the same length
 const metadata: MonsterMetaData = {
   13447: {
     teamBoss: true,
@@ -68,7 +69,11 @@ function renderActiveParty(
         new ButtonBuilder()
           .setCustomId("disband")
           .setLabel("Disband")
-          .setStyle(ButtonStyle.Secondary)
+          .setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder()
+          .setCustomId("start")
+          .setLabel("Start")
+          .setStyle(ButtonStyle.Primary)
       ),
     ],
   };
@@ -120,6 +125,26 @@ async function killTeamMonster(ctx: CommandContext, monster: Monster) {
         components: [],
       });
       return collector.stop();
+    } else if (i.customId === "start") {
+      const rewards = monster.kill(1, {}).items();
+      const { got, total, totalRaw } = parseLoot(rewards);
+      const memIds = partyMems.map((pm) => pm.id);
+      const memList = partyMems.map((pm) => `- ${pm}`).join("\n");
+      await i.update({
+        embeds: [
+          new EmbedBuilder()
+            .setColor("Green")
+            .setTitle(`Nex: ${interaction.user.displayName}'s party (success)`)
+            .setDescription(
+              `Success! You killed Nex for:\n${got}\n\n${
+                partyMems.length > 0
+                  ? `Rewards have been sold and split equally amongst party members:\n${memList}`
+                  : `You killed ${monster.name} alone, so you reaped all the rewards!`
+              }`
+            ),
+        ],
+        components: [],
+      });
     } else {
       if (i.user.id !== interaction.user.id) {
         return await i.reply({
