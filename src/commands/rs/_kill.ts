@@ -183,6 +183,7 @@ async function killTeamMonster(ctx: CommandContext, monster: Monster) {
 
       for (const id of giveRewardsTo) {
         await storage.updateCoins(id, finalCoins);
+        await storage.setKillCd(id, monster.id, cooldown);
       }
     } else {
       if (i.user.id !== interaction.user.id) {
@@ -207,7 +208,7 @@ async function killTeamMonster(ctx: CommandContext, monster: Monster) {
 }
 
 export async function killMonster(ctx: CommandContext) {
-  const { interaction } = ctx;
+  const { interaction, storage } = ctx;
   const monster = interaction.options.getString("monster") ?? "_____";
   const found = NewMonsters.find((m) =>
     m.aliases.join(" ").includes(monster.toLowerCase())
@@ -218,6 +219,16 @@ export async function killMonster(ctx: CommandContext) {
       content: `Monster or alias \`${monster}\` not found.`,
     });
     return;
+  }
+
+  const cooldown = await storage.checkKillCd(interaction.user.id, found.id);
+
+  if (cooldown > 0) {
+    return await interaction.reply(
+      `You are currently on cooldown for monster: ${
+        found.name
+      }.\nYou can try again in ${cooldown / 60} minutes.`
+    );
   }
 
   if (found.id in metadata) {
