@@ -67,6 +67,11 @@ function renderActiveParty(
     components: [
       new ActionRowBuilder<ButtonBuilder>().addComponents(
         new ButtonBuilder()
+          .setCustomId("start")
+          .setLabel("Start")
+          .setStyle(ButtonStyle.Primary)
+          .setDisabled(!partyMinMet),
+        new ButtonBuilder()
           .setCustomId("join")
           .setLabel("Join")
           .setStyle(ButtonStyle.Success)
@@ -74,12 +79,7 @@ function renderActiveParty(
         new ButtonBuilder()
           .setCustomId("disband")
           .setLabel("Disband")
-          .setStyle(ButtonStyle.Secondary),
-        new ButtonBuilder()
-          .setCustomId("start")
-          .setLabel("Start")
-          .setStyle(ButtonStyle.Primary)
-          .setDisabled(!partyMinMet)
+          .setStyle(ButtonStyle.Secondary)
       ),
       partyMems.length > 0
         ? new ActionRowBuilder<ButtonBuilder>().addComponents(
