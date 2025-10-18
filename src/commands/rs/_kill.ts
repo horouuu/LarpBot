@@ -8,13 +8,16 @@ import {
   ButtonStyle,
   ComponentType,
   EmbedBuilder,
-  Message,
   MessageFlags,
   User,
 } from "discord.js";
 
 const NativeMonsters = [...Monsters].map((m) => m[1]);
 const NewMonsters = [...NativeMonsters, ...CustomMonsters];
+
+function getInMemoryPartyKey(userId: string) {
+  return `${userId}:parties`;
+}
 
 type MonsterMetaData = {
   [monsterId: number]: {
@@ -90,6 +93,10 @@ function renderActiveParty(
 
 async function killTeamMonster(ctx: CommandContext, monster: Monster) {
   const { interaction, storage } = ctx;
+  storage.setInMemory(
+    getInMemoryPartyKey(interaction.user.id),
+    monster.id.toString()
+  );
   const { partySizes, cooldowns } = metadata[monster.id];
   const partyMems: User[] = [];
   const msg = await interaction.reply(
@@ -98,8 +105,25 @@ async function killTeamMonster(ctx: CommandContext, monster: Monster) {
 
   const collector = msg.createMessageComponentCollector({
     filter: (i) => !i.user.bot,
-    time: 60000,
+    time: 5000,
     componentType: ComponentType.Button,
+  });
+
+  collector.on("end", async (_, reason) => {
+    if (reason === "time") {
+      interaction.editReply({
+        embeds: [
+          new EmbedBuilder()
+            .setTitle(
+              `${monster.name}: ${interaction.user.displayName}'s party`
+            )
+            .setColor("DarkRed")
+            .setDescription("Party expired."),
+        ],
+      });
+    }
+
+    storage.delInMemory(`$`);
   });
 
   collector.on("collect", async (i) => {
@@ -139,6 +163,8 @@ async function killTeamMonster(ctx: CommandContext, monster: Monster) {
         ],
         components: [],
       });
+
+      storage.delInMemory(getInMemoryPartyKey(interaction.user.id));
       return collector.stop();
     } else if (i.customId === "start") {
       if (i.user.id !== interaction.user.id) {
@@ -154,8 +180,6 @@ async function killTeamMonster(ctx: CommandContext, monster: Monster) {
           pm,
         ])
       );
-
-      console.log(cds);
 
       const onCd = cds.flatMap((cd) =>
         cd[0] > 0 ? [`${cd[1]}: ${Math.floor(cd[0] / 60)} minutes`] : []
@@ -208,6 +232,8 @@ async function killTeamMonster(ctx: CommandContext, monster: Monster) {
         await storage.updateCoins(id, finalCoins);
         await storage.setKillCd(id, monster.id, cooldown);
       }
+
+      storage.delInMemory(getInMemoryPartyKey(interaction.user.id));
     } else {
       if (i.user.id !== interaction.user.id) {
         return await i.reply({
@@ -258,7 +284,18 @@ export async function killMonster(ctx: CommandContext) {
   if (found.id in metadata) {
     const { teamBoss, cooldowns } = metadata[found.id];
     if (teamBoss) {
-      await killTeamMonster(ctx, found);
+      const existingParty = storage.getInMemory(
+        getInMemoryPartyKey(interaction.user.id)
+      );
+
+      if (!existingParty) {
+        await killTeamMonster(ctx, found);
+      } else {
+        await interaction.reply({
+          content: "You already have a party open.",
+          flags: [MessageFlags.Ephemeral],
+        });
+      }
     } else if (cooldowns.length > 0) {
       // set cooldown to cooldowns[0]
     }
