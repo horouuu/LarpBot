@@ -1,5 +1,5 @@
 import { CommandContext } from "@types-local/commands";
-import { Monster, Monsters } from "oldschooljs";
+import { Monster, Monsters, Util } from "oldschooljs";
 import { parseLoot } from "./_rs_utils.js";
 import { CustomMonsters } from "./monsters/index.js";
 import {
@@ -38,6 +38,8 @@ function renderActiveParty(
   monster: Monster
 ) {
   const { partySizes, cooldowns } = metadata[monster.id];
+  const partyMinMet = partyMems.length + 1 >= Math.min(...partySizes);
+  const partyFull = partyMems.length + 1 >= Math.max(...partySizes);
   const cdList = partySizes
     .map((e, i) => `${e}: ${cooldowns[i] / 60} minutes`)
     .join("\n");
@@ -46,8 +48,12 @@ function renderActiveParty(
   return {
     embeds: [
       new EmbedBuilder()
-        .setColor("Aqua")
-        .setTitle(`${monster.name}: ${partyLead.displayName}'s party`)
+        .setColor(partyFull ? "Blue" : partyMinMet ? "Aqua" : "DarkAqua")
+        .setTitle(
+          `${monster.name}: ${partyLead.displayName}'s party${
+            partyFull ? " (FULL)" : ""
+          }`
+        )
         .setDescription(
           `You have opted to kill a team boss.\nThis boss can be killed in parties of: ${partySizes}.\n\nThe following are the cooldowns incurred by each party size:\n${cdList}\n\n**Members**\n- ${partyLead} (leader)${
             newMems.length > 0 ? `\n${newMems}` : ""
@@ -59,7 +65,8 @@ function renderActiveParty(
         new ButtonBuilder()
           .setCustomId("join")
           .setLabel("Join")
-          .setStyle(ButtonStyle.Success),
+          .setStyle(ButtonStyle.Success)
+          .setDisabled(partyFull),
         ...partyMems.map((p) =>
           new ButtonBuilder()
             .setCustomId(p.id)
@@ -74,6 +81,7 @@ function renderActiveParty(
           .setCustomId("start")
           .setLabel("Start")
           .setStyle(ButtonStyle.Primary)
+          .setDisabled(!partyMinMet)
       ),
     ],
   };
@@ -94,10 +102,16 @@ async function killTeamMonster(ctx: CommandContext, monster: Monster) {
   });
 
   collector.on("collect", async (i) => {
+    const partyFull = partyMems.length + 1 > Math.max(...partySizes);
     if (i.customId === "join") {
       if (i.user.id === interaction.user.id || partyMems.includes(i.user)) {
         return await i.reply({
           content: "You are already in this party.",
+          flags: [MessageFlags.Ephemeral],
+        });
+      } else if (partyFull) {
+        return await i.reply({
+          content: "This party is full!",
           flags: [MessageFlags.Ephemeral],
         });
       } else {
@@ -126,10 +140,27 @@ async function killTeamMonster(ctx: CommandContext, monster: Monster) {
       });
       return collector.stop();
     } else if (i.customId === "start") {
+      if (i.user.id !== interaction.user.id) {
+        return await i.reply({
+          content: "Only the party leader can start the kill.",
+          flags: [MessageFlags.Ephemeral],
+        });
+      }
+
       const rewards = monster.kill(1, {}).items();
       const { got, total, totalRaw } = parseLoot(rewards);
-      const memIds = partyMems.map((pm) => pm.id);
-      const memList = partyMems.map((pm) => `- ${pm}`).join("\n");
+      const giveRewardsTo = [
+        interaction.user.id,
+        ...partyMems.map((pm) => pm.id),
+      ];
+      const finalCoins = Math.floor(totalRaw / (partyMems.length + 1));
+      const memList = [interaction.user, ...partyMems]
+        .map((pm) => `- ${pm} (+${Util.toKMB(finalCoins)})`)
+        .join("\n");
+
+      const cooldownIdx = Math.max(partySizes.indexOf(partyMems.length + 1), 0);
+      const cooldown = cooldowns[cooldownIdx];
+
       await i.update({
         embeds: [
           new EmbedBuilder()
@@ -138,13 +169,21 @@ async function killTeamMonster(ctx: CommandContext, monster: Monster) {
             .setDescription(
               `Success! You killed Nex for:\n${got}\n\n${
                 partyMems.length > 0
-                  ? `Rewards have been sold and split equally amongst party members:\n${memList}`
-                  : `You killed ${monster.name} alone, so you reaped all the rewards!`
-              }`
+                  ? `Rewards have been sold and split equally amongst party members:\n${memList}\nTotal: ${total}`
+                  : `You killed ${monster.name} alone, so you reaped all the rewards! (${total})`
+              }\n\n${
+                partyMems.length > 0 ? "**Each member has " : "**You have "
+              } been put on a cooldown for ${monster.name} for ${
+                cooldown / 60
+              } minutes.**`
             ),
         ],
         components: [],
       });
+
+      for (const id of giveRewardsTo) {
+        await storage.updateCoins(id, finalCoins);
+      }
     } else {
       if (i.user.id !== interaction.user.id) {
         return await i.reply({
