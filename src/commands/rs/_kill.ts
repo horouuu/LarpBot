@@ -235,6 +235,7 @@ async function killTeamMonster(ctx: CommandContext, monster: Monster) {
       }
 
       storage.delInMemory(getInMemoryPartyKey(interaction.user.id));
+      collector.stop();
     } else {
       if (i.user.id !== interaction.user.id) {
         return await i.reply({
