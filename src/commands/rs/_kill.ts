@@ -286,7 +286,7 @@ export async function killMonster(ctx: CommandContext) {
         found.name
       }.\nYou can try again in \`${Math.floor(cooldown / 60)} minutes and ${
         cooldown % 60
-      } seconds.\``,
+      } seconds\`.`,
       flags: [MessageFlags.Ephemeral],
     });
   }
