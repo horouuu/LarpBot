@@ -105,13 +105,13 @@ async function killTeamMonster(ctx: CommandContext, monster: Monster) {
 
   const collector = msg.createMessageComponentCollector({
     filter: (i) => !i.user.bot,
-    time: 5000,
+    time: 60000,
     componentType: ComponentType.Button,
   });
 
   collector.on("end", async (_, reason) => {
     if (reason === "time") {
-      interaction.editReply({
+      await interaction.editReply({
         embeds: [
           new EmbedBuilder()
             .setTitle(
@@ -120,10 +120,11 @@ async function killTeamMonster(ctx: CommandContext, monster: Monster) {
             .setColor("DarkRed")
             .setDescription("Party expired."),
         ],
+        components: [],
       });
     }
 
-    storage.delInMemory(`$`);
+    storage.delInMemory(getInMemoryPartyKey(interaction.user.id));
   });
 
   collector.on("collect", async (i) => {
