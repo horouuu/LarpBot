@@ -218,7 +218,7 @@ async function killTeamMonster(ctx: CommandContext, monster: Monster) {
       await i.update({
         embeds: [
           new EmbedBuilder()
-            .setColor("Green")
+            .setColor("Blurple")
             .setTitle(`Nex: ${interaction.user.displayName}'s party (success)`)
             .setDescription(
               `Success! You killed Nex for:\n${got}\n\n${
