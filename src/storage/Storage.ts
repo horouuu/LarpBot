@@ -17,6 +17,10 @@ type RetrievedGatekept = {
   channelId: string;
 };
 export abstract class Storage {
+  abstract getInMemory(key: string): string | null;
+  abstract setInMemory(key: string, value: string): void;
+  abstract delInMemory(key: string): void;
+
   abstract registerConfig<T extends PersistedKey>(
     guildId: string,
     config: {
@@ -65,6 +69,14 @@ export abstract class Storage {
   abstract updateCoins(userId: string, change: number): Promise<void>;
 
   abstract getInventory(userId: string): Promise<{ [id: string]: string }>;
+
+  abstract setKillCd(
+    userId: string,
+    monsterId: number,
+    cdSecs: number
+  ): Promise<void>;
+
+  abstract checkKillCd(userId: string, monsterId: number): Promise<number>;
 
   abstract updateInventory(
     userId: string,

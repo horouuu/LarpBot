@@ -47,9 +47,22 @@ function decodeValueFromKey(
 
 export class RedisStorage implements Storage {
   private _client: ReturnType<typeof createClient>;
+  private _inMemory: { [key: string]: string | null } = {};
 
   private constructor(client: typeof this._client) {
     this._client = client;
+  }
+
+  public getInMemory(key: string): string | null {
+    return this._inMemory[key] ?? null;
+  }
+
+  public setInMemory(key: string, value: string) {
+    this._inMemory[key] = value;
+  }
+
+  public delInMemory(key: string) {
+    this._inMemory[key] = null;
   }
 
   public static async create(config: ConfigType) {
@@ -138,6 +151,21 @@ export class RedisStorage implements Storage {
         );
       }
       return await this._client.hGetAll(key);
+    } catch (e) {
+      console.error(e);
+      throw new Error("Failed to write to database!");
+    }
+  }
+
+  private async _hGet(key: string, field: string) {
+    try {
+      if (!this._checkType(key, RedisTypes.HASH)) {
+        throw new Error(
+          `ERROR: Attempted to get hash value at key storing non-hash value ${key}`
+        );
+      }
+
+      return await this._client.hGet(key, field);
     } catch (e) {
       console.error(e);
       throw new Error("Failed to write to database!");
@@ -455,6 +483,42 @@ export class RedisStorage implements Storage {
     const final: { [id: string]: string } = {};
     invs.reduce((prev, curr) => Object.assign(prev, curr), final);
     return final;
+  }
+
+  public async setKillCd(
+    userId: string,
+    monsterId: number,
+    cdSecs: number
+  ): Promise<void> {
+    const key = `users:${userId}:rs:cooldowns:monsters`;
+    await this._hIncrByFields(key, { [monsterId]: 1 });
+    try {
+      await this._client.sendCommand([
+        "HEXPIRE",
+        key,
+        cdSecs.toString(),
+        "FIELDS",
+        "1",
+        monsterId.toString(),
+      ]);
+    } catch (e) {
+      console.error(e);
+      throw new Error("Failed to set expiry in DB.");
+    }
+  }
+
+  public async checkKillCd(userId: string, monsterId: number) {
+    const key = `users:${userId}:rs:cooldowns:monsters`;
+    const cdNum = await this._hGet(key, monsterId.toString());
+    if (cdNum === null || Number.isNaN(parseInt(cdNum))) return 0;
+    try {
+      const ttl = await this._client.HTTL(key, monsterId.toString());
+      if (ttl === null || ttl[0] < 0) return 0;
+      return parseInt(cdNum) * ttl[0];
+    } catch (e) {
+      console.error(e);
+      throw new Error("Failed to check kill cd through DB.");
+    }
   }
 
   public async destroy(): Promise<void> {
