@@ -128,7 +128,7 @@ async function killTeamMonster(ctx: CommandContext, monster: Monster) {
   });
 
   collector.on("collect", async (i) => {
-    const partyFull = partyMems.length + 1 > Math.max(...partySizes);
+    const partyFull = partyMems.length + 1 >= Math.max(...partySizes);
     if (i.customId === "join") {
       if (i.user.id === interaction.user.id || partyMems.includes(i.user)) {
         return await i.reply({
