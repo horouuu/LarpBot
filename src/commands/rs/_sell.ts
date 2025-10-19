@@ -1,5 +1,12 @@
 import { CommandContext } from "@types-local/commands";
-import { MessageFlags } from "discord.js";
+import {
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+  ComponentType,
+  EmbedBuilder,
+  MessageFlags,
+} from "discord.js";
 import { Items } from "oldschooljs";
 
 export async function sellItems(ctx: CommandContext) {
@@ -54,22 +61,99 @@ export async function sellItems(ctx: CommandContext) {
   if (quantity <= parseInt(itemNum)) {
     const value = item.price * quantity;
 
-    // prompt users first before selling
+    const msg = await interaction.reply({
+      embeds: [
+        new EmbedBuilder()
+          .setTitle(`Selling: ${quantity}x ${item.name}`)
+          .setDescription(
+            `Are you sure you wish to sell \`${quantity}x ${item.name}\`?`
+          )
+          .setColor("DarkRed"),
+      ],
+      components: [
+        new ActionRowBuilder<ButtonBuilder>().addComponents(
+          new ButtonBuilder()
+            .setCustomId("sell")
+            .setLabel("Sell")
+            .setStyle(ButtonStyle.Danger),
+          new ButtonBuilder()
+            .setCustomId("cancel")
+            .setLabel("Cancel")
+            .setStyle(ButtonStyle.Secondary)
+        ),
+      ],
+      flags: [MessageFlags.Ephemeral],
+      withResponse: true,
+    });
 
-    await storage.updateInventory(interaction.user.id, [[item, -quantity]]);
-    await storage.updateCoins(interaction.user.id, value);
-    return await interaction.reply({
-      content: `You have sold \`${quantity} x ${
-        item.name
-      }\` for \`${value.toLocaleString()}\` coins.`,
+    const collector = msg.resource?.message?.createMessageComponentCollector({
+      filter: (i) => i.user.id === interaction.user.id,
+      time: 15000,
+      componentType: ComponentType.Button,
+    });
+
+    collector?.on("collect", async (i) => {
+      try {
+        if (i.customId === "sell") {
+          await storage.updateInventory(interaction.user.id, [
+            [item, -quantity],
+          ]);
+          await storage.updateCoins(interaction.user.id, value);
+          await i.update({
+            embeds: [
+              new EmbedBuilder()
+                .setTitle(`Selling: ${quantity}x ${item.name}`)
+                .setDescription(
+                  `You have sold \`${quantity} x ${
+                    item.name
+                  }\` for \`${value.toLocaleString()}\` coins.`
+                )
+                .setColor("DarkGold"),
+            ],
+            components: [],
+          });
+        } else {
+          await i.update({
+            embeds: [
+              new EmbedBuilder()
+                .setTitle(`Selling: ${quantity}x ${item.name}`)
+                .setDescription("Cancelled sell request.")
+                .setColor("DarkRed"),
+            ],
+            components: [],
+          });
+        }
+      } catch (e) {
+        console.error(e);
+      }
+
+      collector.stop();
+    });
+
+    collector?.on("end", async (_, reason) => {
+      if (reason === "time") {
+        try {
+          return await interaction.editReply({
+            embeds: [
+              new EmbedBuilder()
+                .setTitle(`Selling: ${quantity}x ${item.name}`)
+                .setDescription("Sell request expired.")
+                .setColor("DarkRed"),
+            ],
+            components: [],
+          });
+        } catch (e) {
+          console.error(e);
+        }
+      }
     });
   } else {
-    const msg =
+    const responseMsg =
       parseInt(itemNum) > 0
         ? `You do not have enough of the item \`${item.name}\` to sell. You only have \`${itemNum}\`.`
         : `You don't have any \`${itemName}\` in your bank!`;
     return await interaction.reply({
-      content: msg,
+      content: responseMsg,
       flags: [MessageFlags.Ephemeral],
     });
   }
