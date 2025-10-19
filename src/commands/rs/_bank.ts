@@ -98,11 +98,23 @@ export async function handleBankPages(
     filter: (i) =>
       (i.customId === "bank_back" || i.customId === "bank_next") &&
       i.user.id == interaction.user.id,
-    time: 15000,
+    time: 30000,
     componentType: ComponentType.Button,
   });
 
   let page = 0;
+  collector?.on("end", async (i) => {
+    const content = {
+      embeds: [components.embeds[page]],
+      components: [],
+    };
+    if (interaction.deferred || interaction.replied) {
+      interaction.editReply(content);
+    } else {
+      interaction.reply(content);
+    }
+  });
+
   collector?.on("collect", async (i) => {
     const deferTimer = setTimeout(
       () => i.deferUpdate().catch((e) => console.error("")),
