@@ -103,17 +103,18 @@ async function killTeamMonster(ctx: CommandContext, monster: Monster) {
   );
   const { partySizes, cooldowns } = metadata[monster.id];
   const partyMems: User[] = [];
-  const msg = await interaction.reply(
-    renderActiveParty(interaction.user, partyMems, monster)
-  );
+  const msg = await interaction.reply({
+    ...renderActiveParty(interaction.user, partyMems, monster),
+    withResponse: true,
+  });
 
-  const collector = msg.createMessageComponentCollector({
+  const collector = msg.resource?.message?.createMessageComponentCollector({
     filter: (i) => !i.user.bot,
     time: 120 * 1000,
     componentType: ComponentType.Button,
   });
 
-  collector.on("end", async (_, reason) => {
+  collector?.on("end", async (_, reason) => {
     if (reason === "time") {
       await interaction.editReply({
         embeds: [
@@ -131,7 +132,7 @@ async function killTeamMonster(ctx: CommandContext, monster: Monster) {
     storage.delInMemory(getInMemoryPartyKey(interaction.user.id));
   });
 
-  collector.on("collect", async (i) => {
+  collector?.on("collect", async (i) => {
     const partyFull = partyMems.length + 1 >= Math.max(...partySizes);
     if (i.customId === "join") {
       if (i.user.id === interaction.user.id || partyMems.includes(i.user)) {
