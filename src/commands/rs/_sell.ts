@@ -1,4 +1,4 @@
-import { Command, CommandContext } from "@types-local/commands";
+import { CommandContext } from "@types-local/commands";
 import {
   ActionRowBuilder,
   ButtonBuilder,
@@ -7,7 +7,6 @@ import {
   CacheType,
   ComponentType,
   EmbedBuilder,
-  Interaction,
   InteractionCollector,
   MessageFlags,
 } from "discord.js";
