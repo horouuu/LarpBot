@@ -22,5 +22,5 @@
       "@/*": ["*"]
     }
   },
-  "exclude": ["./node_modules", "src/scripts/update-types.ts"]
+  "exclude": ["./node_modules", "src/scripts/update-types.ts", "src/_test/*"]
 }

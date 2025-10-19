@@ -8,7 +8,7 @@ const YamaUniqueTable = new LootTable()
     .add("Forgotten lockbox", 1, 303)
     .add("Soulflame horn", 1, 33)
     .add("Oathplate helm", 1, 17)
-    .add("Oathplate body", 1, 17)
+    .add("Oathplate chest", 1, 17)
     .add("Oathplate legs", 1, 17);
 
 const SupplyDrop = new LootTable()
