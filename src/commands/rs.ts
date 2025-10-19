@@ -7,6 +7,7 @@ import { getInventoryEmbeds, handleBankPages } from "./rs/_bank.js";
 import { stake, startStake } from "./rs/_stake.js";
 import { checkBalance } from "./rs/_balance.js";
 import { transferCoins } from "./rs/_transfer.js";
+import { sellItems } from "./rs/_sell.js";
 
 const rsData = new SlashCommandBuilder()
   .setName("rs")
@@ -70,6 +71,23 @@ const rsData = new SlashCommandBuilder()
           .setDescription("Amount of coins to transfer.")
           .setRequired(true)
       )
+  )
+  .addSubcommand((opt) =>
+    opt
+      .setName("sell")
+      .setDescription("Sell items from your bank.")
+      .addStringOption((opt) =>
+        opt
+          .setName("item")
+          .setDescription("Name of the item to sell.")
+          .setRequired(true)
+      )
+      .addIntegerOption((opt) =>
+        opt
+          .setName("quantity")
+          .setDescription("Quantity of the item to sell.")
+          .setRequired(false)
+      )
   );
 
 const rs = {
@@ -125,6 +143,10 @@ const rs = {
             );
 
           await transferCoins(ctx, p1, p2, amount);
+          break;
+
+        case "sell":
+          await sellItems(ctx);
           break;
         default:
           throw new Error("Invalid input.");
