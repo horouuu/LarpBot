@@ -1,15 +1,11 @@
 import { CommandContext } from "@types-local/commands";
-import { MessageFlags, SlashCommandBuilder } from "discord.js";
-import { parse } from "dotenv";
+import { MessageFlags } from "discord.js";
 import { Items } from "oldschooljs";
-import { itemID } from "oldschooljs/dist/util";
 
 export async function sellItems(ctx: CommandContext) {
   const { interaction, storage } = ctx;
   const itemName = interaction.options.getString("item", true);
   const quantity = interaction.options.getInteger("quantity") || 1;
-  // Check user has enough of the item
-  // Perform the sale
   const userInv = await storage.getInventory(interaction.user.id);
   const item = Items.find((item) =>
     item.name.toLowerCase().includes(itemName.toLowerCase())
@@ -23,7 +19,7 @@ export async function sellItems(ctx: CommandContext) {
 
   if (Object.keys(userInv).includes(item.id.toString())) {
     const itemNum = userInv[item.id.toString()];
-    console.log(itemNum);
+
     if (quantity <= parseInt(itemNum)) {
       const value = item.price * quantity;
       await storage.updateCoins(interaction.user.id, value);
