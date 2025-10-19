@@ -1,13 +1,88 @@
-import { CommandContext } from "@types-local/commands";
+import { Command, CommandContext } from "@types-local/commands";
 import {
   ActionRowBuilder,
   ButtonBuilder,
+  ButtonInteraction,
   ButtonStyle,
+  CacheType,
   ComponentType,
   EmbedBuilder,
+  Interaction,
+  InteractionCollector,
   MessageFlags,
 } from "discord.js";
-import { Items } from "oldschooljs";
+import { Item, Items } from "oldschooljs";
+
+type HandlerContext = {
+  collector: InteractionCollector<ButtonInteraction<CacheType>>;
+  i: ButtonInteraction<CacheType>;
+} & CommandContext;
+
+async function handleEnd(
+  ctx: CommandContext,
+  item: Item,
+  quantity: number,
+  reason: string
+) {
+  const { interaction } = ctx;
+  if (reason === "time") {
+    try {
+      return await interaction.editReply({
+        embeds: [
+          new EmbedBuilder()
+            .setTitle(`Selling: ${quantity}x ${item.name}`)
+            .setDescription("Sell request expired.")
+            .setColor("DarkRed"),
+        ],
+        components: [],
+      });
+    } catch (e) {
+      console.error(e);
+    }
+  }
+}
+
+async function handleCollect(
+  ctx: HandlerContext,
+  item: Item,
+  quantity: number
+) {
+  const { collector, i, interaction, storage } = ctx;
+  try {
+    if (i.customId === "sell") {
+      const value = item.price * quantity;
+      await storage.updateInventory(interaction.user.id, [[item, -quantity]]);
+      await storage.updateCoins(interaction.user.id, value);
+      await i.update({
+        embeds: [
+          new EmbedBuilder()
+            .setTitle(`Selling: ${quantity}x ${item.name}`)
+            .setDescription(
+              `You have sold \`${quantity}x ${
+                item.name
+              }\` for \`${value.toLocaleString()}\` coins.`
+            )
+            .setColor("DarkGold"),
+        ],
+        components: [],
+      });
+    } else {
+      await i.update({
+        embeds: [
+          new EmbedBuilder()
+            .setTitle(`Selling: ${quantity}x ${item.name}`)
+            .setDescription("Cancelled sell request.")
+            .setColor("DarkRed"),
+        ],
+        components: [],
+      });
+    }
+  } catch (e) {
+    console.error(e);
+  }
+
+  collector.stop();
+}
 
 export async function sellItems(ctx: CommandContext) {
   const { interaction, storage } = ctx;
@@ -59,8 +134,6 @@ export async function sellItems(ctx: CommandContext) {
 
   const itemNum = userInv[item.id.toString()];
   if (quantity <= parseInt(itemNum)) {
-    const value = item.price * quantity;
-
     const msg = await interaction.reply({
       embeds: [
         new EmbedBuilder()
@@ -92,61 +165,13 @@ export async function sellItems(ctx: CommandContext) {
       componentType: ComponentType.Button,
     });
 
-    collector?.on("collect", async (i) => {
-      try {
-        if (i.customId === "sell") {
-          await storage.updateInventory(interaction.user.id, [
-            [item, -quantity],
-          ]);
-          await storage.updateCoins(interaction.user.id, value);
-          await i.update({
-            embeds: [
-              new EmbedBuilder()
-                .setTitle(`Selling: ${quantity}x ${item.name}`)
-                .setDescription(
-                  `You have sold \`${quantity} x ${
-                    item.name
-                  }\` for \`${value.toLocaleString()}\` coins.`
-                )
-                .setColor("DarkGold"),
-            ],
-            components: [],
-          });
-        } else {
-          await i.update({
-            embeds: [
-              new EmbedBuilder()
-                .setTitle(`Selling: ${quantity}x ${item.name}`)
-                .setDescription("Cancelled sell request.")
-                .setColor("DarkRed"),
-            ],
-            components: [],
-          });
-        }
-      } catch (e) {
-        console.error(e);
-      }
+    collector?.on("collect", (i) =>
+      handleCollect({ collector, i, ...ctx }, item, quantity)
+    );
 
-      collector.stop();
-    });
-
-    collector?.on("end", async (_, reason) => {
-      if (reason === "time") {
-        try {
-          return await interaction.editReply({
-            embeds: [
-              new EmbedBuilder()
-                .setTitle(`Selling: ${quantity}x ${item.name}`)
-                .setDescription("Sell request expired.")
-                .setColor("DarkRed"),
-            ],
-            components: [],
-          });
-        } catch (e) {
-          console.error(e);
-        }
-      }
-    });
+    collector?.on("end", async (_, reason) =>
+      handleEnd(ctx, item, quantity, reason)
+    );
   } else {
     const responseMsg =
       parseInt(itemNum) > 0
