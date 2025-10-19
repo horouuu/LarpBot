@@ -1,4 +1,4 @@
-const json = require("../../node_modules/oldschooljs/dist/data/items/item_data.json");
+const json = require("./item_data.json");
 const curr = require("./prices.json").data;
 const fs = require("fs");
 
