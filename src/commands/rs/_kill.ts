@@ -109,7 +109,7 @@ async function killTeamMonster(ctx: CommandContext, monster: Monster) {
 
   const collector = msg.createMessageComponentCollector({
     filter: (i) => !i.user.bot,
-    time: 60000,
+    time: 120 * 1000,
     componentType: ComponentType.Button,
   });
 
