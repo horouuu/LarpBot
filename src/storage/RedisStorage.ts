@@ -429,7 +429,6 @@ export class RedisStorage implements Storage {
   public async updateClueData(userId: string, data: DBClueData<number>) {
     const clueKey = getRsClueKey(userId);
     await this._hIncrByFields(clueKey, data);
-    await this.updateCoins(userId, data.clueCoins);
   }
 
   public async getClueData(userId: string) {
