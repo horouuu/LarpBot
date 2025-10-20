@@ -41,8 +41,8 @@ const metadata: MonsterMetaData = {
   },
   319: {
     teamBoss: true,
-    partySizes: [1],
-    cooldowns: [1 * 60],
+    partySizes: [1, 2, 3],
+    cooldowns: [1 * 60, 30, 15],
   },
 };
 
@@ -55,7 +55,7 @@ function renderActiveParty(
   const partyMinMet = partyMems.length + 1 >= Math.min(...partySizes);
   const partyFull = partyMems.length + 1 >= Math.max(...partySizes);
   const cdList = partySizes
-    .map((e, i) => `${e}: ${cooldowns[i] / 60} minutes`)
+    .map((e, i) => `${e}: ${cooldowns[i] / 60} minute(s)`)
     .join("\n");
 
   const newMems = partyMems.map((pm) => `- ${pm}`).join("\n");
