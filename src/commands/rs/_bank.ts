@@ -155,8 +155,7 @@ export async function handleBankPages(
     collector.resetTimer();
   });
 }
-
-export async function sellAllItems(ctx: CommandContext) {
+async function calculateTotalBankValue(ctx: CommandContext) {
   const { interaction, storage } = ctx;
   const userInv = await storage.getInventory(interaction.user.id);
   let totalValue = 0;
@@ -166,7 +165,15 @@ export async function sellAllItems(ctx: CommandContext) {
     totalValue += item.price * parseInt(i[1]);
     return [[item, -i[1]]];
   });
+  return { totalValue, newBank };
+}
 
+async function clearUserBank(
+  ctx: CommandContext,
+  newBank: [Item, number][],
+  totalValue: number
+) {
+  const { interaction, storage } = ctx;
   const coins = Items.find((item) => item.id === 995);
   if (coins) {
     newBank.push([coins, totalValue]);
@@ -174,10 +181,10 @@ export async function sellAllItems(ctx: CommandContext) {
     await storage.updateCoins(interaction.user.id, totalValue);
   }
   await storage.updateInventory(interaction.user.id, newBank);
-
-
-
-
+}
+export async function sellAllItems(ctx: CommandContext) {
+  const { interaction } = ctx;
+  const { totalValue, newBank } = await calculateTotalBankValue(ctx);
   const msg = await interaction.reply({
     embeds: [
       new EmbedBuilder()
@@ -207,7 +214,7 @@ export async function sellAllItems(ctx: CommandContext) {
     time: 15000,
     componentType: ComponentType.Button,
   });
-  collector?.on("collect", (i) => {
+  collector?.on("collect", async (i) => {
     if (i.customId === "sell") {
       i.update({
         embeds: [
@@ -224,10 +231,13 @@ export async function sellAllItems(ctx: CommandContext) {
         ],
         components: [],
       });
+      await clearUserBank(ctx, newBank, totalValue);
     } else if (i.customId === "cancel") {
       i.update({
         embeds: [
-          new EmbedBuilder().setDescription("Sale cancelled").setColor("DarkRed"),
+          new EmbedBuilder()
+            .setDescription("Sale cancelled")
+            .setColor("DarkRed"),
         ],
         components: [],
       });
@@ -242,5 +252,6 @@ export async function sellAllItems(ctx: CommandContext) {
         ],
         components: [],
       });
-    }});
+    }
+  });
 }
