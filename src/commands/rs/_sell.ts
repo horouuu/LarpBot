@@ -17,19 +17,13 @@ type HandlerContext = {
   i: ButtonInteraction<CacheType>;
 } & CommandContext;
 
-async function handleEnd(
-  ctx: CommandContext,
-  item: Item,
-  quantity: number,
-  reason: string
-) {
+async function handleEnd(ctx: CommandContext, reason: string) {
   const { interaction } = ctx;
   if (reason === "time") {
     try {
       return await interaction.editReply({
         embeds: [
           new EmbedBuilder()
-            .setTitle(`Selling: ${quantity}x ${item.name}`)
             .setDescription("Sell request expired.")
             .setColor("DarkRed"),
         ],
@@ -52,12 +46,24 @@ async function handleCollect(
       const value = item.price * quantity;
       await storage.updateInventory(interaction.user.id, [[item, -quantity]]);
       await storage.updateCoins(interaction.user.id, value);
-      await i.reply({
+      await i.update({
         embeds: [
           new EmbedBuilder()
-            .setTitle(`Selling: ${quantity}x ${item.name}`)
+            .setDescription("Sell request sent.")
+            .setColor("DarkGreen"),
+        ],
+        components: [],
+      });
+      await i.followUp({
+        embeds: [
+          new EmbedBuilder()
+            .setAuthor({
+              name: interaction.user.displayName,
+              iconURL: interaction.user.avatarURL() ?? "",
+            })
+            .setTitle(`Sold: ${quantity}x ${item.name}`)
             .setDescription(
-              `You have sold \`${quantity}x ${
+              `${interaction.user.displayName} sold \`${quantity}x ${
                 item.name
               }\` for \`${value.toLocaleString()}\` coins.`
             )
@@ -69,7 +75,6 @@ async function handleCollect(
       await i.update({
         embeds: [
           new EmbedBuilder()
-            .setTitle(`Selling: ${quantity}x ${item.name}`)
             .setDescription("Cancelled sell request.")
             .setColor("DarkRed"),
         ],
@@ -168,9 +173,7 @@ export async function sellItems(ctx: CommandContext) {
       handleCollect({ collector, i, ...ctx }, item, quantity)
     );
 
-    collector?.on("end", async (_, reason) =>
-      handleEnd(ctx, item, quantity, reason)
-    );
+    collector?.on("end", async (_, reason) => handleEnd(ctx, reason));
   } else {
     const responseMsg =
       parseInt(itemNum) > 0
