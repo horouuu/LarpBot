@@ -1,5 +1,6 @@
 # LarpBot
 ## Commands
+### Basic
 `/gatekeeper view` `/gatekeeper register (channel)` `/gatekeeper delist` \
 Listens to join messages in the channel where the command is called. \
 Optionally, a channel can be specified instead. 
@@ -13,6 +14,34 @@ Sets a message of the day. Currently only accepts string input.
 
 `/votekick [user] (ban)` \
 Starts a vote to kick a user. If the optional boolean flag is set, ban instead.
+
+### OSRS-related (/rs)
+`/rs clue open` `/rs clue stats` \
+Opens clues and views your clue stats. \
+Clue tiers are random, ranging from medium to master and are weighted towards hard and elite.
+
+`/rs bank` \
+Shows a paginated embed view of your bank.
+
+`/rs sell [item] (quantity)` \
+Sell an `(quantity)` of an `[item]` that you possess. \
+This will prompt a confirmation message on execution.
+
+`/rs kill [monster]` \
+Simulates killing a monster. Puts all loot in your bank, \
+or auto-sells and splits them equally for party kills.
+
+`/rs stake [user] (amount)`
+Simulates a whip-stake on OSRS. \
+The loser will have `(amount)` coins taken out of their bank and \
+transferred to the winner. \
+If no amount is entered, the stake will turn into a friendly duel.
+
+`/rs transfer [user] [amount]`
+Transfers `[amount]` coins to `[user]`. \
+This will prompt a confirmation message on execution.
+
+
 
 ## Configurations
 `actionThreshold` \
@@ -33,8 +62,7 @@ Notes:
 - Test builds using `npm run build`.
 - Use `src/scripts/updateTypes.ts` to generate a new type file when adding new commands.
 - To test the build during development, `src/scripts/load-env.ps1` (Windows Powershell) is provided to copy all `.env` variables into the environment.
-- You'll have to manually set `NODE_ENV=production` in your environment in order to test the build during development.
 
 Redis:
 - The namespace scheme is currently `guilds:[guildId]:[category]:[subcategories]`.
-- The bot is currently only using the persistent key-value store.
+- For `rs` commands, the namespace scheme is `users:[userId]:rs:...`.
