@@ -153,3 +153,54 @@ export async function handleBankPages(
     collector.resetTimer();
   });
 }
+
+export async function sellAllItems(ctx: CommandContext) {
+  const { interaction, storage } = ctx;
+  const userInv = await storage.getInventory(interaction.user.id);
+  let totalValue = 0;
+  for (const itemId of Object.keys(userInv)) {
+    const item = Items.find((i) => i.id.toString() === itemId);
+    if (!item) continue;
+    const quantity = parseInt(userInv[itemId]);
+    if (quantity <= 0) continue;
+    totalValue += item.price * quantity;
+  }
+  const newBank: [Item, number][] = Object.entries(userInv).flatMap((i) => {
+    const item = Items.find((it) => it.id.toString() === i[0]);
+    if (!item || !item.price) return [];
+    return [[item, -i[1]]];
+  });
+
+  const coins = Items.find((item) => item.id === 995);
+  if (coins) {
+    newBank.push([coins, totalValue]);
+  } else {
+    await storage.updateCoins(interaction.user.id, totalValue);
+  }
+  console.log(newBank);
+  await storage.updateInventory(interaction.user.id, newBank);
+
+  return await interaction.reply({
+    embeds: [
+      new EmbedBuilder()
+        .setTitle(`Selling: All items`)
+        .setDescription(
+          `Are you sure you wish to sell all items in your bank for \`${totalValue.toLocaleString()}\` coins?`
+        )
+        .setColor("DarkRed"),
+    ],
+    components: [
+      new ActionRowBuilder<ButtonBuilder>().addComponents(
+        new ButtonBuilder()
+          .setCustomId("sell")
+          .setLabel("Sell")
+          .setStyle(ButtonStyle.Danger),
+        new ButtonBuilder()
+          .setCustomId("cancel")
+          .setLabel("Cancel")
+          .setStyle(ButtonStyle.Secondary)
+      ),
+    ],
+    withResponse: true,
+  });
+}

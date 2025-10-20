@@ -3,7 +3,11 @@ import { SlashCommandBuilder } from "discord.js";
 import { openClue, showClueStats } from "./rs/_clue.js";
 import { catchAllInteractionReply } from "@utils";
 import { killMonster } from "./rs/_kill.js";
-import { getInventoryEmbeds, handleBankPages } from "./rs/_bank.js";
+import {
+  getInventoryEmbeds,
+  handleBankPages,
+  sellAllItems,
+} from "./rs/_bank.js";
 import { stake, startStake } from "./rs/_stake.js";
 import { checkBalance } from "./rs/_balance.js";
 import { transferCoins } from "./rs/_transfer.js";
@@ -34,7 +38,17 @@ const rsData = new SlashCommandBuilder()
           .setRequired(true)
       )
   )
-  .addSubcommand((opt) => opt.setName("bank").setDescription("View your bank."))
+  .addSubcommandGroup((opt) =>
+    opt
+      .setName("bank")
+      .setDescription("View your bank.")
+      .addSubcommand((opt) =>
+        opt.setName("open").setDescription("Open your bank.")
+      )
+      .addSubcommand((opt) =>
+        opt.setName("sellall").setDescription("Sell all items from your bank.")
+      )
+  )
   .addSubcommand((opt) =>
     opt
       .setName("stake")
@@ -99,7 +113,21 @@ const rs = {
     try {
       switch (cmd) {
         case "open":
-          await openClue(ctx);
+          if (cmdGroup === "clue") {
+            await openClue(ctx);
+          } else if (cmdGroup === "bank") {
+            const out = await getInventoryEmbeds(ctx);
+            if (out.embeds.length === 0)
+              return await interaction.reply("You have no items!");
+
+            const msg = await interaction.reply({
+              embeds: [out.embeds[0]],
+              components: [out.actionRow],
+              withResponse: true,
+            });
+
+            await handleBankPages(ctx, msg, out);
+          }
           break;
         case "kill":
           await killMonster(ctx);
@@ -109,18 +137,8 @@ const rs = {
             await showClueStats(ctx);
           }
           break;
-        case "bank":
-          const out = await getInventoryEmbeds(ctx);
-          if (out.embeds.length === 0)
-            return await interaction.reply("You have no items!");
-
-          const msg = await interaction.reply({
-            embeds: [out.embeds[0]],
-            components: [out.actionRow],
-            withResponse: true,
-          });
-
-          await handleBankPages(ctx, msg, out);
+        case "sellall":
+          await sellAllItems(ctx);
           break;
         case "stake":
           await startStake(ctx);
