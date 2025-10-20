@@ -302,7 +302,7 @@ export async function confirmStake(
     });
 
     const collector = msg.resource?.message?.createMessageComponentCollector({
-      time: 15000,
+      time: 30000,
       componentType: ComponentType.Button,
     });
 
