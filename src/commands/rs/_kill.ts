@@ -293,7 +293,7 @@ export async function killMonster(ctx: CommandContext) {
   }
 
   if (found.id in metadata) {
-    const { teamBoss, cooldowns } = metadata[found.id];
+    const { teamBoss } = metadata[found.id];
     if (teamBoss) {
       const existingParty = storage.getInMemory(
         getInMemoryPartyKey(interaction.user.id)
@@ -307,13 +307,18 @@ export async function killMonster(ctx: CommandContext) {
           flags: [MessageFlags.Ephemeral],
         });
       }
-    } else if (cooldowns.length > 0) {
-      // set cooldown to cooldowns[0]
     }
   } else {
     const rewards = found.kill(1, {}).items();
     const { got, total } = parseLoot(rewards);
     const msg = `You killed [${found.name}](<${found.data.wikiURL}>)!\n${got}\n### Total loot: ${total}`;
+    if (found.id in metadata) {
+      const { cooldowns } = metadata[found.id];
+      if (cooldowns.length > 0) {
+        // set cd
+      }
+    }
+
     await storage.updateInventory(interaction.user.id, rewards);
     await interaction.reply(msg);
   }
