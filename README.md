@@ -31,13 +31,13 @@ This will prompt a confirmation message on execution.
 Simulates killing a monster. Puts all loot in your bank, \
 or auto-sells and splits them equally for party kills.
 
-`/rs stake [user] (amount)`
+`/rs stake [user] (amount)` \
 Simulates a whip-stake on OSRS. \
 The loser will have `(amount)` coins taken out of their bank and \
 transferred to the winner. \
 If no amount is entered, the stake will turn into a friendly duel.
 
-`/rs transfer [user] [amount]`
+`/rs transfer [user] [amount]` \
 Transfers `[amount]` coins to `[user]`. \
 This will prompt a confirmation message on execution.
 
