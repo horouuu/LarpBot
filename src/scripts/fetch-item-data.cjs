@@ -24,6 +24,7 @@ fetch(
               lowalch: v.lowalch,
               highalch: v.highalch,
               wiki_url: v.wiki_url,
+              price: 0,
             },
           ];
         })
