@@ -32,7 +32,12 @@ const metadata: MonsterMetaData = {
   13447: {
     teamBoss: true,
     partySizes: [1, 2, 3, 4, 5],
-    cooldowns: [7200, 1800, 1200, 900, 600],
+    cooldowns: [120 * 60, 30 * 60, 20 * 60, 15 * 60, 10 * 60],
+  },
+  14176: {
+    teamBoss: true,
+    partySizes: [1, 2],
+    cooldowns: [6 * 60, 3 * 60],
   },
 };
 
