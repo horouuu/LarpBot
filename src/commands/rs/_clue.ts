@@ -2,6 +2,7 @@ import { CommandContext } from "@types-local/commands";
 import { Clues } from "oldschooljs";
 import { getEmptyClueData, parseLoot } from "./_rs_utils.js";
 import { toKMB } from "oldschooljs/dist/util/smallUtils.js";
+import { EmbedBuilder } from "discord.js";
 
 const clueList = [
   { tier: Clues.Medium, num: 1, name: "Medium" },
@@ -29,9 +30,21 @@ export async function openClue(ctx: CommandContext) {
 
   await storage.updateClueData(interaction.user.id, toUpdate);
 
-  await interaction.reply(
-    `You opened a **[${res.name}]** clue scroll!\n${got}\n### Total loot: ${total}`
-  );
+  await interaction.reply({
+    embeds: [
+      new EmbedBuilder()
+        .setColor(
+          totalRaw > 100000000 ? "Red" : totalRaw > 7500000 ? "Gold" : "Greyple"
+        )
+        .setAuthor({
+          name: interaction.user.displayName,
+          iconURL: interaction.user.displayAvatarURL() ?? "",
+        })
+        .setTitle(`You opened a **[${res.name}]** clue scroll!`)
+        .setDescription(`${got}`)
+        .setFooter({ text: `Total loot: ${total}` }),
+    ],
+  });
 
   await storage.updateInventory(interaction.user.id, rewards);
 }
