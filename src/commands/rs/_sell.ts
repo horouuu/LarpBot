@@ -54,7 +54,9 @@ async function handleCollect(
         ],
         components: [],
       });
-      await i.followUp({
+
+      const channel = i.channel;
+      const content = {
         embeds: [
           new EmbedBuilder()
             .setAuthor({
@@ -70,7 +72,12 @@ async function handleCollect(
             .setColor("DarkGold"),
         ],
         components: [],
-      });
+      };
+      if (channel?.isSendable()) {
+        await channel.send(content);
+      } else {
+        await i.followUp(content);
+      }
     } else {
       await i.update({
         embeds: [
