@@ -39,6 +39,11 @@ const metadata: MonsterMetaData = {
     partySizes: [1, 2],
     cooldowns: [6 * 60, 3 * 60],
   },
+  319: {
+    teamBoss: true,
+    partySizes: [1],
+    cooldowns: [1 * 60],
+  },
 };
 
 function renderActiveParty(
@@ -225,7 +230,9 @@ async function killTeamMonster(ctx: CommandContext, monster: Monster) {
         embeds: [
           new EmbedBuilder()
             .setColor("Blurple")
-            .setTitle(`Nex: ${interaction.user.displayName}'s party (success)`)
+            .setTitle(
+              `${monster.name}: ${interaction.user.displayName}'s party (success)`
+            )
             .setDescription(
               `Success! You killed ${monster.name} for:\n${got}\n\n${
                 partyMems.length > 0
@@ -235,7 +242,7 @@ async function killTeamMonster(ctx: CommandContext, monster: Monster) {
                 partyMems.length > 0 ? "**Each member has " : "**You have "
               } been put on a cooldown for ${monster.name} for ${
                 cooldown / 60
-              } minutes.**`
+              } minute(s).**`
             ),
         ],
         components: [],
