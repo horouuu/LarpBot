@@ -52,7 +52,7 @@ async function handleCollect(
       const value = item.price * quantity;
       await storage.updateInventory(interaction.user.id, [[item, -quantity]]);
       await storage.updateCoins(interaction.user.id, value);
-      await i.update({
+      await i.reply({
         embeds: [
           new EmbedBuilder()
             .setTitle(`Selling: ${quantity}x ${item.name}`)
