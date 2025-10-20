@@ -255,6 +255,7 @@ async function killTeamMonster(ctx: CommandContext, monster: Monster) {
         }
       } else {
         await storage.updateInventory(interaction.user.id, rewards);
+        await storage.setKillCd(interaction.user.id, monster.id, cooldown);
       }
 
       storage.delInMemory(getInMemoryPartyKey(interaction.user.id));
