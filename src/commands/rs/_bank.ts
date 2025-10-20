@@ -216,7 +216,7 @@ export async function sellAllItems(ctx: CommandContext) {
   });
   collector?.on("collect", async (i) => {
     if (i.customId === "sell") {
-      i.update({
+      const content = {
         embeds: [
           new EmbedBuilder()
             .setTitle("Items Sold")
@@ -230,7 +230,14 @@ export async function sellAllItems(ctx: CommandContext) {
             ),
         ],
         components: [],
-      });
+      };
+
+      if (i.channel?.isSendable()) {
+        i.channel.send(content);
+      } else {
+        i.update(content);
+      }
+
       await clearUserBank(ctx, newBank, totalValue);
     } else if (i.customId === "cancel") {
       i.update({
