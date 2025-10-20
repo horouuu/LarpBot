@@ -47,7 +47,7 @@ This will prompt a confirmation message on execution.
 `actionThreshold` \
 How many valid votes it takes for a vote to pass (or fail). A valid vote is every vote except for the target user and any bot. \
 `memberRole` \
-Role to give members that passes the gatekeeper.
+Role to give members that pass the gatekeeper.
 
 ## Usage
 1. Copy `.env.example`, fill it accordingly, and rename it to `.env`.
