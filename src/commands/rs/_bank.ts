@@ -21,7 +21,7 @@ export async function getInventoryEmbeds(ctx: CommandContext) {
   });
   const totalValue = invEntries.reduce((prev, curr) => {
     if (!curr[0]) return 0;
-    return prev + curr[0].price;
+    return prev + (curr[0].price ?? 0);
   }, 0);
 
   const invData: APIEmbedField[] = invEntries
