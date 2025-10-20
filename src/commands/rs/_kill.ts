@@ -230,7 +230,7 @@ async function killTeamMonster(ctx: CommandContext, monster: Monster) {
               `Success! You killed Nex for:\n${got}\n\n${
                 partyMems.length > 0
                   ? `Rewards have been sold and split equally amongst party members:\n${memList}\nTotal: ${total}`
-                  : `You killed ${monster.name} alone, so you reaped all the rewards! (${total})`
+                  : `You killed ${monster.name} alone, so you reaped all the rewards! (${total})\nBanked all rewards.`
               }\n\n${
                 partyMems.length > 0 ? "**Each member has " : "**You have "
               } been put on a cooldown for ${monster.name} for ${
@@ -241,9 +241,13 @@ async function killTeamMonster(ctx: CommandContext, monster: Monster) {
         components: [],
       });
 
-      for (const id of giveRewardsTo) {
-        await storage.updateCoins(id, finalCoins);
-        await storage.setKillCd(id, monster.id, cooldown);
+      if (partyMems.length > 0) {
+        for (const id of giveRewardsTo) {
+          await storage.updateCoins(id, finalCoins);
+          await storage.setKillCd(id, monster.id, cooldown);
+        }
+      } else {
+        await storage.updateInventory(interaction.user.id, rewards);
       }
 
       storage.delInMemory(getInMemoryPartyKey(interaction.user.id));
