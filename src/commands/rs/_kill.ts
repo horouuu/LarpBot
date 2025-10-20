@@ -314,7 +314,7 @@ export async function killMonster(ctx: CommandContext) {
     const rewards = found.kill(1, {}).items();
     const { got, total } = parseLoot(rewards);
     const msg = `You killed [${found.name}](<${found.data.wikiURL}>)!\n${got}\n### Total loot: ${total}`;
-
+    await storage.updateInventory(interaction.user.id, rewards);
     await interaction.reply(msg);
   }
 }
