@@ -7,6 +7,7 @@ import {
   ComponentType,
   EmbedBuilder,
   InteractionCallbackResponse,
+  MessageFlags,
 } from "discord.js";
 import { Item, Items, Util } from "oldschooljs";
 
@@ -158,16 +159,10 @@ export async function sellAllItems(ctx: CommandContext) {
   const { interaction, storage } = ctx;
   const userInv = await storage.getInventory(interaction.user.id);
   let totalValue = 0;
-  for (const itemId of Object.keys(userInv)) {
-    const item = Items.find((i) => i.id.toString() === itemId);
-    if (!item) continue;
-    const quantity = parseInt(userInv[itemId]);
-    if (quantity <= 0) continue;
-    totalValue += item.price * quantity;
-  }
   const newBank: [Item, number][] = Object.entries(userInv).flatMap((i) => {
     const item = Items.find((it) => it.id.toString() === i[0]);
     if (!item || !item.price) return [];
+    totalValue += item.price * parseInt(i[1]);
     return [[item, -i[1]]];
   });
 
@@ -177,10 +172,12 @@ export async function sellAllItems(ctx: CommandContext) {
   } else {
     await storage.updateCoins(interaction.user.id, totalValue);
   }
-  console.log(newBank);
   await storage.updateInventory(interaction.user.id, newBank);
 
-  return await interaction.reply({
+
+
+
+  const msg = await interaction.reply({
     embeds: [
       new EmbedBuilder()
         .setTitle(`Selling: All items`)
@@ -201,6 +198,48 @@ export async function sellAllItems(ctx: CommandContext) {
           .setStyle(ButtonStyle.Secondary)
       ),
     ],
+    flags: [MessageFlags.Ephemeral],
     withResponse: true,
   });
+  const collector = msg.resource?.message?.createMessageComponentCollector({
+    filter: (i) => i.user.id === interaction.user.id,
+    time: 15000,
+    componentType: ComponentType.Button,
+  });
+  collector?.on("collect", (i) => {
+    if (i.customId === "sell") {
+      i.update({
+        embeds: [
+          new EmbedBuilder()
+            .setTitle("Items Sold")
+            .setColor("DarkGold")
+            .setAuthor({
+              iconURL: interaction.user.avatarURL() ?? "",
+              name: interaction.user.displayName,
+            })
+            .setDescription(
+              `You have sold all items in your bank for \`${totalValue.toLocaleString()}\` coins.`
+            ),
+        ],
+        components: [],
+      });
+    } else if (i.customId === "cancel") {
+      i.update({
+        embeds: [
+          new EmbedBuilder().setDescription("Sale cancelled").setColor("DarkRed"),
+        ],
+        components: [],
+      });
+    }
+    collector.stop();
+  });
+  collector?.on("end", async (_, reason) => {
+    if (reason === "time") {
+      interaction.editReply({
+        embeds: [
+          new EmbedBuilder().setDescription("Sale expired").setColor("DarkRed"),
+        ],
+        components: [],
+      });
+    }});
 }
