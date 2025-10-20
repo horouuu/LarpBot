@@ -1,9 +1,6 @@
 import { LootTable } from "oldschooljs";
 import { SimpleMonster } from "../_module-remap.js";
 import { attachWikiURL } from "../_rs_utils.js";
-import { parseLoot } from "../_rs_utils.js";
-
-// Taken from https://github.com/oldschoolgg/oldschooljs
 
 const NexUniqueTable = new LootTable()
   .add("Zaryte vambraces")
