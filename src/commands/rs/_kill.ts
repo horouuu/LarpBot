@@ -227,7 +227,7 @@ async function killTeamMonster(ctx: CommandContext, monster: Monster) {
             .setColor("Blurple")
             .setTitle(`Nex: ${interaction.user.displayName}'s party (success)`)
             .setDescription(
-              `Success! You killed Nex for:\n${got}\n\n${
+              `Success! You killed ${monster.name} for:\n${got}\n\n${
                 partyMems.length > 0
                   ? `Rewards have been sold and split equally amongst party members:\n${memList}\nTotal: ${total}`
                   : `You killed ${monster.name} alone, so you reaped all the rewards! (${total})\nBanked all rewards.`
