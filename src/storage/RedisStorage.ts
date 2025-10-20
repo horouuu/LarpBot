@@ -462,6 +462,8 @@ export class RedisStorage implements Storage {
     items.forEach((t) => {
       if (t[0].id != 995) {
         itemsMap[t[0].id] = t[1];
+      } else {
+        this.updateCoins(userId, t[1]);
       }
     });
     await this._hIncrByFieldsBucket(baseKey, 1000, itemsMap);
