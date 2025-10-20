@@ -20,8 +20,9 @@ export async function getInventoryEmbeds(ctx: CommandContext) {
     const item = Items.find((_, k) => parseInt(entry[0]) == k);
     return [item ?? null, entry[1]] as [Item | null, string];
   });
+
   const totalValue = invEntries.reduce((prev, curr) => {
-    if (!curr[0]) return 0;
+    if (!curr[0] || !parseInt(curr[1])) return 0;
     return prev + (curr[0].price ?? 0);
   }, 0);
 
