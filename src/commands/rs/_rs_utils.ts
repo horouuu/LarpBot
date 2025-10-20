@@ -51,7 +51,7 @@ export function parseLoot(rewards: [Item, number][]) {
     .map((r) => {
       const item = r[0];
       const amt = r[1];
-      const price = item.price ?? 0;
+      const price = item.price ?? (item.id === 995 ? 1 : 0);
 
       total += price * amt;
       return `${amt}x [${item.name}](<${item.wiki_url}>) (${Util.toKMB(
