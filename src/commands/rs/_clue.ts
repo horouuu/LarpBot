@@ -40,7 +40,7 @@ export async function openClue(ctx: CommandContext) {
           name: interaction.user.displayName,
           iconURL: interaction.user.displayAvatarURL() ?? "",
         })
-        .setTitle(`You opened a **[${res.name}]** clue scroll!`)
+        .setTitle(`Clue scroll (${res.name.toLowerCase()})`)
         .setDescription(`${got}`)
         .setFooter({ text: `Total loot: ${total}` }),
     ],
