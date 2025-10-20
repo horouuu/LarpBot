@@ -25,7 +25,7 @@ const handlerCtx: HandlerContext = { client, config, storage };
 // ready listener
 client.once(Events.ClientReady, async (readyClient) => {
   console.log(
-    `\n-----\nBot currently in:\n${readyClient.guilds.cache
+    `\n-----\nBot currently in:\n\n${readyClient.guilds.cache
       .map((g) => `${g.name} | ${g.id}`)
       .join("\n")}\n-----\n`
   );
