@@ -19,10 +19,6 @@ function getInMemoryPartyKey(userId: string) {
   return `${userId}:parties`;
 }
 
-function getInMemoryStartKey(userId: string) {
-  return `${userId}:starting`;
-}
-
 type MonsterMetaData = {
   [monsterId: number]: {
     teamBoss: boolean;
@@ -143,7 +139,6 @@ async function killTeamMonster(ctx: CommandContext, monster: Monster) {
       });
     }
 
-    storage.delInMemory(getInMemoryStartKey(interaction.user.id));
     storage.delInMemory(getInMemoryPartyKey(interaction.user.id));
   });
 
@@ -160,18 +155,11 @@ async function killTeamMonster(ctx: CommandContext, monster: Monster) {
           content: "This party is full!",
           flags: [MessageFlags.Ephemeral],
         });
-      } else if (
-        !storage.getInMemory(getInMemoryStartKey(interaction.user.id))
-      ) {
+      } else {
         partyMems.push(i.user);
         return await i.update(
           renderActiveParty(interaction.user, partyMems, monster)
         );
-      } else {
-        return await i.reply({
-          content: "The party already started the kill!",
-          flags: [MessageFlags.Ephemeral],
-        });
       }
     } else if (i.customId === "disband") {
       if (i.user.id !== interaction.user.id)
@@ -195,10 +183,6 @@ async function killTeamMonster(ctx: CommandContext, monster: Monster) {
       storage.delInMemory(getInMemoryPartyKey(interaction.user.id));
       return collector.stop();
     } else if (i.customId === "start") {
-      storage.setInMemory(
-        getInMemoryStartKey(interaction.user.id),
-        monster.id.toString()
-      );
       if (i.user.id !== interaction.user.id) {
         return await i.reply({
           content: "Only the party leader can start the kill.",
@@ -241,8 +225,7 @@ async function killTeamMonster(ctx: CommandContext, monster: Monster) {
 
       const cooldownIdx = Math.max(partySizes.indexOf(partyMems.length + 1), 0);
       const cooldown = cooldowns[cooldownIdx];
-
-      await i.update({
+      const content = {
         embeds: [
           new EmbedBuilder()
             .setColor("Blurple")
@@ -262,7 +245,12 @@ async function killTeamMonster(ctx: CommandContext, monster: Monster) {
             ),
         ],
         components: [],
-      });
+      };
+      
+      await Promise.all([
+        interaction.deleteReply(),
+        i.channel?.isSendable() ? i.channel.send(content) : i.reply(content),
+      ]);
 
       if (partyMems.length > 0) {
         for (const id of giveRewardsTo) {
