@@ -12,6 +12,7 @@ import { stake, startStake } from "./rs/_stake.js";
 import { checkBalance } from "./rs/_balance.js";
 import { transferCoins } from "./rs/_transfer.js";
 import { sellItems } from "./rs/_sell.js";
+import { showCoinLb } from "./rs/_lb.js";
 
 const rsData = new SlashCommandBuilder()
   .setName("rs")
@@ -102,6 +103,16 @@ const rsData = new SlashCommandBuilder()
           .setDescription("Quantity of the item to sell.")
           .setRequired(false)
       )
+  )
+  .addSubcommandGroup((opt) =>
+    opt
+      .setName("lb")
+      .setDescription("View the leaderboards for this guild.")
+      .addSubcommand((opt) =>
+        opt
+          .setName("coins")
+          .setDescription("View this guild's leaderboard for coins.")
+      )
   );
 
 const rs = {
@@ -162,9 +173,13 @@ const rs = {
 
           await transferCoins(ctx, p1, p2, amount);
           break;
-
         case "sell":
           await sellItems(ctx);
+          break;
+        case "coins":
+          if (cmdGroup === "lb") {
+            await showCoinLb(ctx);
+          }
           break;
         default:
           throw new Error("Invalid input.");

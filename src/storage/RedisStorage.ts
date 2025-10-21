@@ -522,6 +522,19 @@ export class RedisStorage implements Storage {
     }
   }
 
+  public async getCoinsData(users: string[]) {
+    const batch = this._client.multi();
+    for (const userId of users) {
+      const key = `users:${userId}:rs:coins`;
+      batch.get(key);
+    }
+
+    const out = (await batch.execAsPipelineTyped()).flatMap((c, i) =>
+      parseInt(c) ? [[users[i], parseInt(c)]] : []
+    );
+    return out as [string, number][];
+  }
+
   public async destroy(): Promise<void> {
     await this._client.close();
   }

@@ -82,6 +82,8 @@ export abstract class Storage {
     userId: string,
     items: [Item, number][]
   ): Promise<void>;
+
+  abstract getCoinsData(users: string[]): Promise<[string, number][]>;
 }
 
 export type { PersistedKey, PersistedConfigs };

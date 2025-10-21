@@ -6,6 +6,9 @@ export enum EmojiEnum {
   EMOJI_NAY = "❌",
   EMOJI_BYE = "👋",
   EMOJI_WELCOME = "🎉",
+  EMOJI_FIRST_PLACE = "🥇",
+  EMOJI_SECOND_PLACE = "🥈",
+  EMOJI_THIRD_PLACE = "🥉",
 }
 
 const ERR_MSG_GENERIC =
