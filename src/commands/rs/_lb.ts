@@ -26,7 +26,9 @@ export async function showCoinLb(ctx: CommandContext) {
         members.get(data[0])?.displayName
       }`,
       value: `${data[1].toLocaleString()}`,
+      rawValue: data[1],
     }))
+    .sort((a, b) => b.rawValue - a.rawValue)
     .slice(0, 10);
 
   await interaction.reply({
