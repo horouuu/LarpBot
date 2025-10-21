@@ -21,14 +21,13 @@ export async function showCoinLb(ctx: CommandContext) {
   const memIds = members.map((m) => m.id);
   const coinsData = await storage.getCoinsData(memIds);
   const fields: APIEmbedField[] = coinsData
+    .sort((a, b) => b[1] - a[1])
     .map((data, i) => ({
       name: `${i < emojis.length ? emojis[i] : `${i + 1})`}${
         members.get(data[0])?.displayName
       }`,
       value: `${data[1].toLocaleString()}`,
-      rawValue: data[1],
     }))
-    .sort((a, b) => b.rawValue - a.rawValue)
     .slice(0, 10);
 
   await interaction.reply({
