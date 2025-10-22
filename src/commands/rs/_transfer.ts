@@ -1,4 +1,4 @@
-import { promptConfirmationDialog } from "@commands/lib/_cmd-utils";
+import { promptConfirmationDialog } from "../lib/_cmd-utils.js";
 import { CommandContext } from "@types-local/commands";
 import {
   ButtonInteraction,
