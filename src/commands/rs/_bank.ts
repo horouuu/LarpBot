@@ -9,6 +9,7 @@ import {
   ComponentType,
   EmbedBuilder,
   InteractionCallbackResponse,
+  MessageFlags,
 } from "discord.js";
 import { Item, Items, Util } from "oldschooljs";
 
@@ -187,6 +188,17 @@ async function clearUserBank(
 export async function sellAllItems(ctx: CommandContext) {
   const { interaction } = ctx;
   const { totalValue, newBank } = await calculateTotalBankValue(ctx);
+
+  if (totalValue === 0) {
+    return await interaction.reply({
+      embeds: [
+        new EmbedBuilder()
+          .setDescription(`You have nothing in your bank to sell!`)
+          .setColor("DarkRed"),
+      ],
+      flags: [MessageFlags.Ephemeral],
+    });
+  }
 
   const handleSell = async (i: ButtonInteraction) => {
     const content = {
