@@ -1,7 +1,6 @@
 import {
   ActionRowBuilder,
   ButtonBuilder,
-  ButtonComponent,
   ButtonInteraction,
   ButtonStyle,
   CacheType,
@@ -10,7 +9,6 @@ import {
   EmbedBuilder,
   InteractionCallbackResponse,
   InteractionReplyOptions,
-  Message,
   MessageFlags,
 } from "discord.js";
 
