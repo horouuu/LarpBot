@@ -49,6 +49,15 @@ export async function sellItems(ctx: CommandContext) {
       content: `No items in your bank match the input \`${itemName}\`!`,
       flags: [MessageFlags.Ephemeral],
     });
+  } else if (item.price === 0) {
+    return await interaction.reply({
+      embeds: [
+        new EmbedBuilder()
+          .setDescription(`\`${item.name}\` cannot be sold!`)
+          .setColor("DarkRed"),
+      ],
+      flags: [MessageFlags.Ephemeral],
+    });
   }
 
   const itemNum = userInv[item.id.toString()];
