@@ -9,7 +9,6 @@ import {
   ComponentType,
   EmbedBuilder,
   InteractionCallbackResponse,
-  MessageFlags,
 } from "discord.js";
 import { Item, Items, Util } from "oldschooljs";
 
