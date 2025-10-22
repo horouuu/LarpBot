@@ -1,99 +1,7 @@
+import { promptConfirmationDialog } from "../lib/_cmd-utils.js";
 import { CommandContext } from "@types-local/commands";
-import {
-  ActionRowBuilder,
-  ButtonBuilder,
-  ButtonInteraction,
-  ButtonStyle,
-  CacheType,
-  ComponentType,
-  EmbedBuilder,
-  InteractionCollector,
-  MessageFlags,
-} from "discord.js";
-import { Item, Items } from "oldschooljs";
-
-type HandlerContext = {
-  collector: InteractionCollector<ButtonInteraction<CacheType>>;
-  i: ButtonInteraction<CacheType>;
-} & CommandContext;
-
-async function handleEnd(ctx: CommandContext, reason: string) {
-  const { interaction } = ctx;
-  if (reason === "time") {
-    try {
-      return await interaction.editReply({
-        embeds: [
-          new EmbedBuilder()
-            .setDescription("Sell request expired.")
-            .setColor("DarkRed"),
-        ],
-        components: [],
-      });
-    } catch (e) {
-      console.error(e);
-    }
-  }
-}
-
-async function handleCollect(
-  ctx: HandlerContext,
-  item: Item,
-  quantity: number
-) {
-  const { collector, i, interaction, storage } = ctx;
-  try {
-    if (i.customId === "sell") {
-      const value = item.price * quantity;
-      await storage.updateInventory(interaction.user.id, [[item, -quantity]]);
-      await storage.updateCoins(interaction.user.id, value);
-      await i.update({
-        embeds: [
-          new EmbedBuilder()
-            .setDescription("Sell request sent.")
-            .setColor("DarkGreen"),
-        ],
-        components: [],
-      });
-
-      const channel = i.channel;
-      const content = {
-        embeds: [
-          new EmbedBuilder()
-            .setAuthor({
-              name: interaction.user.displayName,
-              iconURL: interaction.user.avatarURL() ?? "",
-            })
-            .setTitle(`Sold: ${quantity}x ${item.name}`)
-            .setDescription(
-              `${interaction.user.displayName} sold \`${quantity}x ${
-                item.name
-              }\` for \`${value.toLocaleString()}\` coins.`
-            )
-            .setColor("DarkGold"),
-        ],
-        components: [],
-      };
-      if (channel?.isSendable()) {
-        await channel.send(content);
-      } else {
-        await i.followUp(content);
-      }
-    } else {
-      await i.update({
-        embeds: [
-          new EmbedBuilder()
-            .setDescription("Cancelled sell request.")
-            .setColor("DarkRed"),
-        ],
-        components: [],
-      });
-    }
-  } catch (e) {
-    console.error(e);
-  }
-
-  collector.stop();
-}
+import { ButtonInteraction, EmbedBuilder, MessageFlags } from "discord.js";
+import { Items } from "oldschooljs";
 
 export async function sellItems(ctx: CommandContext) {
   const { interaction, storage } = ctx;
@@ -145,42 +53,78 @@ export async function sellItems(ctx: CommandContext) {
 
   const itemNum = userInv[item.id.toString()];
   if (quantity <= parseInt(itemNum)) {
-    const msg = await interaction.reply({
-      embeds: [
-        new EmbedBuilder()
-          .setTitle(`Selling: ${quantity}x ${item.name}`)
-          .setDescription(
-            `Are you sure you wish to sell \`${quantity}x ${item.name}\`?`
-          )
-          .setColor("DarkRed"),
-      ],
-      components: [
-        new ActionRowBuilder<ButtonBuilder>().addComponents(
-          new ButtonBuilder()
-            .setCustomId("sell")
-            .setLabel("Sell")
-            .setStyle(ButtonStyle.Danger),
-          new ButtonBuilder()
-            .setCustomId("cancel")
-            .setLabel("Cancel")
-            .setStyle(ButtonStyle.Secondary)
-        ),
-      ],
-      flags: [MessageFlags.Ephemeral],
-      withResponse: true,
-    });
+    const handleConfirm = async (i: ButtonInteraction) => {
+      const value = item.price * quantity;
+      await storage.updateInventory(interaction.user.id, [[item, -quantity]]);
+      await storage.updateCoins(interaction.user.id, value);
+      await i.update({
+        embeds: [
+          new EmbedBuilder()
+            .setDescription("Sell request sent.")
+            .setColor("DarkGreen"),
+        ],
+        components: [],
+      });
 
-    const collector = msg.resource?.message?.createMessageComponentCollector({
-      filter: (i) => i.user.id === interaction.user.id,
-      time: 15000,
-      componentType: ComponentType.Button,
-    });
+      const channel = i.channel;
+      const content = {
+        embeds: [
+          new EmbedBuilder()
+            .setAuthor({
+              name: interaction.user.displayName,
+              iconURL: interaction.user.avatarURL() ?? "",
+            })
+            .setTitle(`Sold: ${quantity}x ${item.name}`)
+            .setDescription(
+              `${interaction.user.displayName} sold \`${quantity}x ${
+                item.name
+              }\` for \`${value.toLocaleString()}\` coins.`
+            )
+            .setColor("DarkGold"),
+        ],
+        components: [],
+      };
+      if (channel?.isSendable()) {
+        await channel.send(content);
+      } else {
+        await i.followUp(content);
+      }
+    };
 
-    collector?.on("collect", (i) =>
-      handleCollect({ collector, i, ...ctx }, item, quantity)
+    const handleCancel = async (i: ButtonInteraction) =>
+      await i.update({
+        embeds: [
+          new EmbedBuilder()
+            .setDescription("Cancelled sell request.")
+            .setColor("DarkRed"),
+        ],
+        components: [],
+      });
+
+    const handleExpiry = async () =>
+      await interaction.editReply({
+        embeds: [
+          new EmbedBuilder()
+            .setDescription("Sell request expired.")
+            .setColor("DarkRed"),
+        ],
+        components: [],
+      });
+
+    await promptConfirmationDialog(
+      interaction,
+      {
+        handleConfirm,
+        handleCancel,
+        handleExpiry,
+      },
+      {
+        confirmButtonLabel: "Sell",
+        cancelButtonLabel: "Cancel",
+        title: `Selling: ${quantity}x ${item.name}`,
+        prompt: `Are you sure you wish to sell \`${quantity}x ${item.name}\`?`,
+      }
     );
-
-    collector?.on("end", async (_, reason) => handleEnd(ctx, reason));
   } else {
     const responseMsg =
       parseInt(itemNum) > 0

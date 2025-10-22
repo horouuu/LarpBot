@@ -1,11 +1,8 @@
+import { promptConfirmationDialog } from "../lib/_cmd-utils.js";
 import { CommandContext } from "@types-local/commands";
 import {
-  ActionRowBuilder,
-  ButtonBuilder,
   ButtonInteraction,
-  ButtonStyle,
   CacheType,
-  ComponentType,
   EmbedBuilder,
   MessageFlags,
   User,
@@ -20,7 +17,6 @@ async function executeTransfer(
   i: ButtonInteraction<CacheType>
 ) {
   const { storage } = ctx;
-  const amountKmb = Util.toKMB(value);
   await storage.updateCoins(p1.id, value * -1);
   await storage.updateCoins(p2.id, value);
 
@@ -53,72 +49,52 @@ export async function transferCoins(
       flags: [MessageFlags.Ephemeral],
     });
   } else {
-    const msg = await interaction.reply({
-      embeds: [
-        new EmbedBuilder()
-          .setTitle(`Transfer to ${p2.displayName}`)
-          .setColor("DarkRed")
-          .setDescription(
-            `Are you sure you want to transfer ${value.toLocaleString()} coins to ${p2}?`
-          ),
-      ],
-      components: [
-        new ActionRowBuilder<ButtonBuilder>().setComponents(
-          new ButtonBuilder()
-            .setCustomId("yes")
-            .setLabel("Yes")
-            .setStyle(ButtonStyle.Success),
-          new ButtonBuilder()
-            .setCustomId("no")
-            .setLabel("No")
-            .setStyle(ButtonStyle.Danger)
-        ),
-      ],
-    });
+    const handleConfirm = async (i: ButtonInteraction) =>
+      await executeTransfer(ctx, p1, p2, value, i);
 
-    const collector = msg.createMessageComponentCollector({
-      filter: (i) => i.user.id === p1.id,
-      time: 15000,
-      componentType: ComponentType.Button,
-    });
+    const handleCancel = async (i: ButtonInteraction) =>
+      await i.update({
+        embeds: [
+          new EmbedBuilder()
+            .setTitle(`Transfer to ${p2.displayName}`)
+            .setColor("DarkRed")
+            .setDescription(`Transfer cancelled.`),
+        ],
+        components: [],
+      });
 
-    collector.on("collect", async (i) => {
-      if (i.customId === "yes") {
-        await executeTransfer(ctx, p1, p2, value, i);
-      } else {
-        await i.update({
-          embeds: [
-            new EmbedBuilder()
-              .setTitle(`Transfer to ${p2.displayName}`)
-              .setColor("DarkRed")
-              .setDescription(`Transfer cancelled.`),
-          ],
-          components: [],
-        });
-      }
-
-      collector.stop();
-    });
-
-    collector.on("ignore", async (i) => {
+    const handleIgnore = async (i: ButtonInteraction) =>
       await i.reply({
         content: "Only the issuer of the transfer can confirm or rescind it.",
         flags: [MessageFlags.Ephemeral],
       });
-    });
 
-    collector.on("end", async (_, reason) => {
-      if (reason === "time") {
-        await interaction.editReply({
-          embeds: [
-            new EmbedBuilder()
-              .setTitle(`Transfer to ${p2.displayName}`)
-              .setColor("DarkRed")
-              .setDescription(`Transfer expired.`),
-          ],
-          components: [],
-        });
+    const handleExpiry = async () =>
+      await interaction.editReply({
+        embeds: [
+          new EmbedBuilder()
+            .setTitle(`Transfer to ${p2.displayName}`)
+            .setColor("DarkRed")
+            .setDescription(`Transfer expired.`),
+        ],
+        components: [],
+      });
+
+    await promptConfirmationDialog(
+      interaction,
+      {
+        handleConfirm,
+        handleCancel,
+        handleIgnore,
+        handleExpiry,
+      },
+      {
+        confirmButtonLabel: "Yes",
+        cancelButtonLabel: "No",
+        title: `Transfer to ${p2.displayName}`,
+        prompt: `Are you sure you want to transfer ${value.toLocaleString()} coins to ${p2}?`,
+        ephemeral: false,
       }
-    });
+    );
   }
 }

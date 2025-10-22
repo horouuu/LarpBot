@@ -1,7 +1,9 @@
+import { promptConfirmationDialog } from "../lib/_cmd-utils.js";
 import { CommandContext } from "@types-local/commands";
 import {
   ActionRowBuilder,
   ButtonBuilder,
+  ButtonInteraction,
   ButtonStyle,
   ComponentType,
   EmbedBuilder,
@@ -275,73 +277,56 @@ export async function confirmStake(
     });
 
   if (coinsValue > 0) {
-    const confirmEmbed = new EmbedBuilder()
-      .setColor("DarkRed")
-      .setDescription(
-        `Are you sure you want to stake ${p2} for ${Util.toKMB(
+    const handleConfirm = async (i: ButtonInteraction) => {
+      await sendStakeInvite(ctx, p1, p2, coinsValue);
+      await i.update({
+        embeds: [
+          new EmbedBuilder()
+            .setColor("DarkRed")
+            .setDescription(`Stake request sent.`),
+        ],
+        components: [],
+      });
+    };
+
+    const handleCancel = async (i: ButtonInteraction) => {
+      await i.update({
+        embeds: [
+          new EmbedBuilder()
+            .setColor("DarkRed")
+            .setDescription(`Stake request cancelled.`),
+        ],
+        components: [],
+      });
+    };
+
+    const handleExpiry = async () => {
+      await interaction.editReply({
+        embeds: [
+          new EmbedBuilder()
+            .setColor("DarkRed")
+            .setDescription(`Stake expired.`),
+        ],
+        components: [],
+      });
+    };
+
+    await promptConfirmationDialog(
+      interaction,
+      {
+        handleConfirm,
+        handleCancel,
+        handleExpiry,
+      },
+      {
+        confirmButtonLabel: "Yes",
+        cancelButtonLabel: "No",
+        title: `Staking: ${p2.displayName}`,
+        prompt: `Are you sure you want to stake ${p2} for ${Util.toKMB(
           coinsValue
-        )} coins?`
-      );
-
-    const actionRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
-      new ButtonBuilder()
-        .setCustomId("yes")
-        .setLabel("Yes")
-        .setStyle(ButtonStyle.Success),
-      new ButtonBuilder()
-        .setCustomId("no")
-        .setLabel("No")
-        .setStyle(ButtonStyle.Danger)
-    );
-
-    const msg = await interaction.reply({
-      embeds: [confirmEmbed],
-      components: [actionRow],
-      flags: [MessageFlags.Ephemeral],
-      withResponse: true,
-    });
-
-    const collector = msg.resource?.message?.createMessageComponentCollector({
-      time: 30000,
-      componentType: ComponentType.Button,
-    });
-
-    collector?.on("collect", async (i) => {
-      if (i.customId === "no") {
-        await i.update({
-          embeds: [
-            new EmbedBuilder()
-              .setColor("DarkRed")
-              .setDescription(`Stake request cancelled.`),
-          ],
-          components: [],
-        });
-      } else if (i.customId === "yes") {
-        await sendStakeInvite(ctx, p1, p2, coinsValue);
-        await i.update({
-          embeds: [
-            new EmbedBuilder()
-              .setColor("DarkRed")
-              .setDescription(`Stake request sent.`),
-          ],
-          components: [],
-        });
+        )} coins?`,
       }
-
-      collector.stop();
-    });
-
-    collector?.on("end", async (_, reason) => {
-      if (reason === "time")
-        await interaction.editReply({
-          embeds: [
-            new EmbedBuilder()
-              .setColor("DarkRed")
-              .setDescription(`Stake expired.`),
-          ],
-          components: [],
-        });
-    });
+    );
   } else {
     await sendStakeInvite(ctx, p1, p2, 0);
     await interaction.reply({
