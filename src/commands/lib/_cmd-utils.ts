@@ -30,22 +30,19 @@ type ConfirmationDialogHandlers = {
 
 export async function promptConfirmationDialog(
   interaction: ChatInputCommandInteraction<CacheType>,
-  {
-    handleConfirm,
-    handleCancel,
-    handleIgnore,
-    handleExpiry,
-  }: ConfirmationDialogHandlers = {},
-  {
+  handlers: ConfirmationDialogHandlers = {},
+  opts: ConfirmationDialogOpts = {}
+) {
+  const {
     confirmButtonLabel = "Confirm",
     cancelButtonLabel = "Cancel",
     prompt = "Are you sure you wish to do this?",
     title = "Confirmation",
     ephemeral = true,
     expiryMs = 15000,
-  }: ConfirmationDialogOpts = {}
-) {
-  if (!handleConfirm)
+  } = opts;
+
+  const {
     handleConfirm = async (i) =>
       await i.update({
         embeds: [
@@ -55,9 +52,7 @@ export async function promptConfirmationDialog(
             .setColor("DarkGreen"),
         ],
         components: [],
-      });
-
-  if (!handleCancel)
+      }),
     handleCancel = async (i) =>
       await i.update({
         embeds: [
@@ -67,16 +62,12 @@ export async function promptConfirmationDialog(
             .setColor("DarkRed"),
         ],
         components: [],
-      });
-
-  if (!handleIgnore)
+      }),
     handleIgnore = async (i) =>
       await i.reply({
         content: "Only the sender of an interaction can confirm it!",
         flags: [MessageFlags.Ephemeral],
-      });
-
-  if (!handleExpiry)
+      }),
     handleExpiry = async () => {
       await interaction.editReply({
         embeds: [
@@ -87,7 +78,8 @@ export async function promptConfirmationDialog(
         ],
         components: [],
       });
-    };
+    },
+  } = handlers;
 
   const content: InteractionReplyOptions & { withResponse: true } = {
     embeds: [
