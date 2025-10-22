@@ -233,14 +233,22 @@ export async function sellAllItems(ctx: CommandContext) {
       };
 
       if (i.channel?.isSendable()) {
-        i.channel.send(content);
+        await i.channel.send(content);
+        await i.update({
+          embeds: [
+            new EmbedBuilder()
+              .setColor("DarkGreen")
+              .setDescription("Sell request sent."),
+          ],
+          components: [],
+        });
       } else {
-        i.update(content);
+        await i.update(content);
       }
 
       await clearUserBank(ctx, newBank, totalValue);
     } else if (i.customId === "cancel") {
-      i.update({
+      await i.update({
         embeds: [
           new EmbedBuilder()
             .setDescription("Sale cancelled")
