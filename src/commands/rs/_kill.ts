@@ -1,11 +1,13 @@
 import { CommandContext } from "@types-local/commands";
-import { Monster, Monsters, Util } from "oldschooljs";
+import { Monster, Util } from "oldschooljs";
 import { parseLoot } from "./_rs_utils.js";
 import { NewMonsters } from "./monsters/index.js";
 import {
   ActionRowBuilder,
   ButtonBuilder,
+  ButtonInteraction,
   ButtonStyle,
+  CacheType,
   ComponentType,
   EmbedBuilder,
   MessageFlags,
@@ -76,6 +78,56 @@ function renderActiveParty(
   };
 }
 
+async function handleJoin(
+  ctx: CommandContext & {
+    i: ButtonInteraction<CacheType>;
+    monster: Monster;
+    partyMems: User[];
+    partyFull: boolean;
+  }
+) {
+  const { interaction, i, monster, partyMems, partyFull } = ctx;
+  if (i.user.id === interaction.user.id || partyMems.includes(i.user)) {
+    return await i.reply({
+      content: "You are already in this party.",
+      flags: [MessageFlags.Ephemeral],
+    });
+  } else if (partyFull) {
+    return await i.reply({
+      content: "This party is full!",
+      flags: [MessageFlags.Ephemeral],
+    });
+  } else {
+    partyMems.push(i.user);
+    return await i.update(
+      renderActiveParty(interaction.user, partyMems, monster)
+    );
+  }
+}
+
+async function handleDisband(
+  ctx: CommandContext & { i: ButtonInteraction<CacheType>; monster: Monster }
+) {
+  const { interaction, storage, i, monster } = ctx;
+  if (i.user.id !== interaction.user.id)
+    return await i.reply({
+      content: "Only the party leader may disband the party.",
+      flags: [MessageFlags.Ephemeral],
+    });
+
+  await i.update({
+    embeds: [
+      new EmbedBuilder()
+        .setColor("DarkRed")
+        .setTitle(`${monster.name}: ${interaction.user.displayName}'s party`)
+        .setDescription("Party disbanded."),
+    ],
+    components: [],
+  });
+
+  storage.delInMemory(getInMemoryPartyKey(interaction.user.id));
+}
+
 async function killTeamMonster(ctx: CommandContext, monster: Monster) {
   const { interaction, storage } = ctx;
   storage.setInMemory(
@@ -114,44 +166,11 @@ async function killTeamMonster(ctx: CommandContext, monster: Monster) {
   });
 
   collector?.on("collect", async (i) => {
-    const partyFull = partyMems.length + 1 >= Math.max(...partySizes);
     if (i.customId === "join") {
-      if (i.user.id === interaction.user.id || partyMems.includes(i.user)) {
-        return await i.reply({
-          content: "You are already in this party.",
-          flags: [MessageFlags.Ephemeral],
-        });
-      } else if (partyFull) {
-        return await i.reply({
-          content: "This party is full!",
-          flags: [MessageFlags.Ephemeral],
-        });
-      } else {
-        partyMems.push(i.user);
-        return await i.update(
-          renderActiveParty(interaction.user, partyMems, monster)
-        );
-      }
+      const partyFull = partyMems.length + 1 >= Math.max(...partySizes);
+      await handleJoin({ ...ctx, i, monster, partyMems, partyFull });
     } else if (i.customId === "disband") {
-      if (i.user.id !== interaction.user.id)
-        return await i.reply({
-          content: "Only the party leader may disband the party.",
-          flags: [MessageFlags.Ephemeral],
-        });
-
-      await i.update({
-        embeds: [
-          new EmbedBuilder()
-            .setColor("DarkRed")
-            .setTitle(
-              `${monster.name}: ${interaction.user.displayName}'s party`
-            )
-            .setDescription("Party disbanded."),
-        ],
-        components: [],
-      });
-
-      storage.delInMemory(getInMemoryPartyKey(interaction.user.id));
+      await handleDisband({ ...ctx, i, monster });
       return collector.stop();
     } else if (i.customId === "start") {
       if (i.user.id !== interaction.user.id) {
