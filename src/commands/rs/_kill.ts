@@ -44,6 +44,26 @@ const metadata: MonsterMetaData = {
     partySizes: [1, 2, 3],
     cooldowns: [1 * 60, 30, 15],
   },
+  12192: {
+    teamBoss: false,
+    partySizes: [1],
+    cooldowns: [5 * 60],
+  },
+  12215: {
+    teamBoss: false,
+    partySizes: [1],
+    cooldowns: [5 * 60],
+  },
+  12224: {
+    teamBoss: false,
+    partySizes: [1],
+    cooldowns: [5 * 60],
+  },
+  12205: {
+    teamBoss: false,
+    partySizes: [1],
+    cooldowns: [5 * 60],
+  },
 };
 
 function renderActiveParty(
@@ -246,7 +266,7 @@ async function killTeamMonster(ctx: CommandContext, monster: Monster) {
         ],
         components: [],
       };
-      
+
       await Promise.all([
         interaction.deleteReply(),
         i.channel?.isSendable() ? i.channel.send(content) : i.reply(content),
@@ -286,6 +306,47 @@ async function killTeamMonster(ctx: CommandContext, monster: Monster) {
   });
 }
 
+async function killSoloMonster(
+  ctx: CommandContext,
+  monster: Monster,
+  cds: number[] | null
+) {
+  const { interaction, storage } = ctx;
+  const rewards = monster.kill(1, {}).items();
+  const { got, total } = parseLoot(rewards);
+  const content = {
+    embeds: [
+      new EmbedBuilder()
+        .setAuthor({
+          name: interaction.user.displayName,
+          iconURL: interaction.user.displayAvatarURL(),
+        })
+        .setTitle(`${monster.name}`)
+        .setDescription(`${got}\n\n**Banked all loot (${total}).**`)
+        .setURL(monster.data.wikiURL)
+        .setFooter(
+          cds
+            ? {
+                text: `\n\nYou have been put on a cooldown for ${
+                  monster.name
+                } for ${cds[0] / 60} minute(s).`,
+              }
+            : null
+        )
+        .setColor("DarkOrange"),
+    ],
+  };
+
+  const cooldownToSet = cds && cds.length > 0 ? cds[0] : null;
+  await storage.updateInventory(interaction.user.id, rewards);
+  if (cooldownToSet) {
+    await storage.setKillCd(interaction.user.id, monster.id, cooldownToSet);
+  }
+
+  await storage.updateInventory(interaction.user.id, rewards);
+  await interaction.reply(content);
+}
+
 export async function killMonster(ctx: CommandContext) {
   const { interaction, storage } = ctx;
   const monster = interaction.options.getString("monster") ?? "_____";
@@ -314,7 +375,8 @@ export async function killMonster(ctx: CommandContext) {
   }
 
   if (found.id in metadata) {
-    const { teamBoss } = metadata[found.id];
+    const { teamBoss, cooldowns } = metadata[found.id];
+
     if (teamBoss) {
       const existingParty = storage.getInMemory(
         getInMemoryPartyKey(interaction.user.id)
@@ -328,19 +390,10 @@ export async function killMonster(ctx: CommandContext) {
           flags: [MessageFlags.Ephemeral],
         });
       }
+    } else {
+      await killSoloMonster(ctx, found, cooldowns);
     }
   } else {
-    const rewards = found.kill(1, {}).items();
-    const { got, total } = parseLoot(rewards);
-    const msg = `You killed [${found.name}](<${found.data.wikiURL}>)!\n${got}\n### Total loot: ${total}`;
-    if (found.id in metadata) {
-      const { cooldowns } = metadata[found.id];
-      if (cooldowns.length > 0) {
-        // set cd
-      }
-    }
-
-    await storage.updateInventory(interaction.user.id, rewards);
-    await interaction.reply(msg);
+    await killSoloMonster(ctx, found, null);
   }
 }
