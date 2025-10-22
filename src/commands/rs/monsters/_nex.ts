@@ -1,6 +1,6 @@
 import { LootTable } from "oldschooljs";
 import { SimpleMonster } from "../_module-remap.js";
-import { attachWikiURL } from "../_rs_utils.js";
+import { attachWikiURL } from "../_rs-utils.js";
 
 const NexUniqueTable = new LootTable()
   .add("Zaryte vambraces")

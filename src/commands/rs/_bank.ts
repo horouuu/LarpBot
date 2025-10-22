@@ -25,7 +25,7 @@ export async function getInventoryEmbeds(ctx: CommandContext) {
     if (!curr[0] || !parseInt(curr[1])) return prev;
     return prev + (curr[0].price ?? 0) * parseInt(curr[1]);
   }, 0);
-  
+
   const invData: APIEmbedField[] = invEntries
     .flatMap((entry) => {
       if (!entry[0] || !parseInt(entry[1]) || parseInt(entry[1]) === 0)

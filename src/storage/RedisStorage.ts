@@ -12,7 +12,7 @@ import {
   getEmptyClueData,
   getClueKey as getRsClueKey,
   getCoinsKey as getRsCoinsKey,
-} from "@commands/rs/_rs_utils.js";
+} from "@commands/rs/_rs-utils.js";
 import { Item } from "oldschooljs";
 
 enum RedisNamespaces {

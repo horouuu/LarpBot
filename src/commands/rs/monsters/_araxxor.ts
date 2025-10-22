@@ -4,7 +4,7 @@ import {
   RareDropTable,
   SimpleMonster,
 } from "../_module-remap.js";
-import { attachWikiURL } from "../_rs_utils.js";
+import { attachWikiURL } from "../_rs-utils.js";
 
 // Taken from https://github.com/oldschoolgg/oldschooljs
 

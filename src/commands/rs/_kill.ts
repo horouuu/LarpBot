@@ -1,6 +1,6 @@
 import { Command, CommandContext } from "@types-local/commands";
 import { Monster, Util } from "oldschooljs";
-import { parseLoot } from "./_rs_utils.js";
+import { parseLoot } from "./_rs-utils.js";
 import { NewMonsters } from "./monsters/index.js";
 import {
   ActionRowBuilder,

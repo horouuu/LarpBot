@@ -1,6 +1,6 @@
 import { CommandContext } from "@types-local/commands";
 import { Clues } from "oldschooljs";
-import { getEmptyClueData, parseLoot } from "./_rs_utils.js";
+import { getEmptyClueData, parseLoot } from "./_rs-utils.js";
 import { toKMB } from "oldschooljs/dist/util/smallUtils.js";
 import { EmbedBuilder } from "discord.js";
 

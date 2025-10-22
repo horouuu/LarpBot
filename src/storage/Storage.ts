@@ -1,5 +1,5 @@
 import { OrNullEntries } from "@types-local/util";
-import { DBClueData } from "@commands/rs/_rs_utils";
+import { DBClueData } from "@commands/rs/_rs-utils";
 import { Item } from "oldschooljs";
 
 const persistedConfigs = ["actionThreshold", "memberRole"] as const;
