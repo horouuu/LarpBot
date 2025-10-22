@@ -1,70 +1,23 @@
-import { CommandContext } from "@types-local/commands";
-import { Monster, Monsters, Util } from "oldschooljs";
+import { Command, CommandContext } from "@types-local/commands";
+import { Monster, Util } from "oldschooljs";
 import { parseLoot } from "./_rs_utils.js";
-import { CustomMonsters } from "./monsters/index.js";
+import { NewMonsters } from "./monsters/index.js";
 import {
   ActionRowBuilder,
   ButtonBuilder,
+  ButtonInteraction,
   ButtonStyle,
+  CacheType,
   ComponentType,
   EmbedBuilder,
   MessageFlags,
   User,
 } from "discord.js";
-
-const NativeMonsters = [...Monsters].map((m) => m[1]);
-const NewMonsters = [...NativeMonsters, ...CustomMonsters];
+import { metadata } from "./monsters/_kill-metadata.js";
 
 function getInMemoryPartyKey(userId: string) {
   return `${userId}:parties`;
 }
-
-type MonsterMetaData = {
-  [monsterId: number]: {
-    teamBoss: boolean;
-    partySizes: number[];
-    cooldowns: number[];
-  };
-};
-
-// partySizes and cooldowns must have the same length
-const metadata: MonsterMetaData = {
-  13447: {
-    teamBoss: true,
-    partySizes: [1, 2, 3, 4, 5],
-    cooldowns: [120 * 60, 30 * 60, 20 * 60, 15 * 60, 10 * 60],
-  },
-  14176: {
-    teamBoss: true,
-    partySizes: [1, 2],
-    cooldowns: [6 * 60, 3 * 60],
-  },
-  319: {
-    teamBoss: true,
-    partySizes: [1, 2, 3],
-    cooldowns: [1 * 60, 30, 15],
-  },
-  12192: {
-    teamBoss: false,
-    partySizes: [1],
-    cooldowns: [5 * 60],
-  },
-  12215: {
-    teamBoss: false,
-    partySizes: [1],
-    cooldowns: [5 * 60],
-  },
-  12224: {
-    teamBoss: false,
-    partySizes: [1],
-    cooldowns: [5 * 60],
-  },
-  12205: {
-    teamBoss: false,
-    partySizes: [1],
-    cooldowns: [5 * 60],
-  },
-};
 
 function renderActiveParty(
   partyLead: User,
@@ -125,6 +78,173 @@ function renderActiveParty(
   };
 }
 
+async function handleJoin(
+  ctx: CommandContext & {
+    i: ButtonInteraction<CacheType>;
+    monster: Monster;
+    partyMems: User[];
+    partyFull: boolean;
+  }
+) {
+  const { interaction, i, monster, partyMems, partyFull } = ctx;
+  if (i.user.id === interaction.user.id || partyMems.includes(i.user)) {
+    return await i.reply({
+      content: "You are already in this party.",
+      flags: [MessageFlags.Ephemeral],
+    });
+  } else if (partyFull) {
+    return await i.reply({
+      content: "This party is full!",
+      flags: [MessageFlags.Ephemeral],
+    });
+  } else {
+    partyMems.push(i.user);
+    return await i.update(
+      renderActiveParty(interaction.user, partyMems, monster)
+    );
+  }
+}
+
+async function handleDisband(
+  ctx: CommandContext & { i: ButtonInteraction<CacheType>; monster: Monster }
+) {
+  const { interaction, storage, i, monster } = ctx;
+  if (i.user.id !== interaction.user.id)
+    return await i.reply({
+      content: "Only the party leader may disband the party.",
+      flags: [MessageFlags.Ephemeral],
+    });
+
+  await i.update({
+    embeds: [
+      new EmbedBuilder()
+        .setColor("DarkRed")
+        .setTitle(`${monster.name}: ${interaction.user.displayName}'s party`)
+        .setDescription("Party disbanded."),
+    ],
+    components: [],
+  });
+
+  storage.delInMemory(getInMemoryPartyKey(interaction.user.id));
+}
+
+async function handleStart(
+  ctx: CommandContext & {
+    i: ButtonInteraction<CacheType>;
+    monster: Monster;
+    partyMems: User[];
+    partySizes: number[];
+    cooldowns: number[];
+  }
+) {
+  const { interaction, storage, i, monster, partyMems, partySizes, cooldowns } =
+    ctx;
+  if (i.user.id !== interaction.user.id) {
+    return await i.reply({
+      content: "Only the party leader can start the kill.",
+      flags: [MessageFlags.Ephemeral],
+    });
+  }
+
+  const cds: [number, User][] = await Promise.all(
+    [interaction.user, ...partyMems].map(async (pm) => [
+      await storage.checkKillCd(pm.id, monster.id),
+      pm,
+    ])
+  );
+
+  const onCd = cds.flatMap((cd) =>
+    cd[0] > 0
+      ? [`${cd[1]}: ${Math.floor(cd[0] / 60)} mins ${cd[0] % 60} secs`]
+      : []
+  );
+
+  if (onCd.length > 0) {
+    return await i.reply({
+      content: `The following members are on cooldown for ${
+        monster.name
+      }:\n${onCd.join("\n")}`,
+      flags: [MessageFlags.Ephemeral],
+    });
+  }
+
+  const rewards = monster.kill(1, {}).items();
+  const { got, total, totalRaw } = parseLoot(rewards);
+  const giveRewardsTo = [interaction.user.id, ...partyMems.map((pm) => pm.id)];
+  const finalCoins = Math.floor(totalRaw / (partyMems.length + 1));
+  const memList = [interaction.user, ...partyMems]
+    .map((pm) => `- ${pm} (+${Util.toKMB(finalCoins)})`)
+    .join("\n");
+
+  const cooldownIdx = Math.max(partySizes.indexOf(partyMems.length + 1), 0);
+  const cooldown = cooldowns[cooldownIdx];
+  const content = {
+    embeds: [
+      new EmbedBuilder()
+        .setColor("Blurple")
+        .setTitle(
+          `${monster.name}: ${interaction.user.displayName}'s party (success)`
+        )
+        .setDescription(
+          `Success! You killed ${monster.name} for:\n${got}\n\n${
+            partyMems.length > 0
+              ? `Rewards have been sold and split equally amongst party members:\n${memList}\nTotal: ${total}`
+              : `You killed ${monster.name} alone, so you reaped all the rewards! (${total})\nBanked all rewards.`
+          }\n\n${
+            partyMems.length > 0 ? "**Each member has " : "**You have "
+          } been put on a cooldown for ${monster.name} for ${
+            cooldown / 60
+          } minute(s).**`
+        ),
+    ],
+    components: [],
+  };
+
+  await Promise.all([
+    interaction.deleteReply(),
+    i.channel?.isSendable() ? i.channel.send(content) : i.reply(content),
+  ]);
+
+  if (partyMems.length > 0) {
+    for (const id of giveRewardsTo) {
+      await storage.updateCoins(id, finalCoins);
+      await storage.setKillCd(id, monster.id, cooldown);
+    }
+  } else {
+    await storage.updateInventory(interaction.user.id, rewards);
+    await storage.setKillCd(interaction.user.id, monster.id, cooldown);
+  }
+
+  storage.delInMemory(getInMemoryPartyKey(interaction.user.id));
+}
+
+async function handleRemove(
+  ctx: CommandContext & {
+    i: ButtonInteraction<CacheType>;
+    monster: Monster;
+    partyMems: User[];
+  }
+) {
+  const { interaction, i, monster, partyMems } = ctx;
+  if (i.user.id !== interaction.user.id) {
+    return await i.reply({
+      content: "Only the party leader can remove members from a party.",
+      flags: [MessageFlags.Ephemeral],
+    });
+  }
+  const idx = partyMems.map((pm) => pm.id).indexOf(i.customId);
+  if (idx === -1)
+    return await i.reply({
+      content: "Error: Could not find member in party.",
+      flags: [MessageFlags.Ephemeral],
+    });
+
+  partyMems.splice(idx, 1);
+  return await i.update(
+    renderActiveParty(interaction.user, partyMems, monster)
+  );
+}
+
 async function killTeamMonster(ctx: CommandContext, monster: Monster) {
   const { interaction, storage } = ctx;
   storage.setInMemory(
@@ -163,145 +283,24 @@ async function killTeamMonster(ctx: CommandContext, monster: Monster) {
   });
 
   collector?.on("collect", async (i) => {
-    const partyFull = partyMems.length + 1 >= Math.max(...partySizes);
     if (i.customId === "join") {
-      if (i.user.id === interaction.user.id || partyMems.includes(i.user)) {
-        return await i.reply({
-          content: "You are already in this party.",
-          flags: [MessageFlags.Ephemeral],
-        });
-      } else if (partyFull) {
-        return await i.reply({
-          content: "This party is full!",
-          flags: [MessageFlags.Ephemeral],
-        });
-      } else {
-        partyMems.push(i.user);
-        return await i.update(
-          renderActiveParty(interaction.user, partyMems, monster)
-        );
-      }
+      const partyFull = partyMems.length + 1 >= Math.max(...partySizes);
+      await handleJoin({ ...ctx, i, monster, partyMems, partyFull });
     } else if (i.customId === "disband") {
-      if (i.user.id !== interaction.user.id)
-        return await i.reply({
-          content: "Only the party leader may disband the party.",
-          flags: [MessageFlags.Ephemeral],
-        });
-
-      await i.update({
-        embeds: [
-          new EmbedBuilder()
-            .setColor("DarkRed")
-            .setTitle(
-              `${monster.name}: ${interaction.user.displayName}'s party`
-            )
-            .setDescription("Party disbanded."),
-        ],
-        components: [],
-      });
-
-      storage.delInMemory(getInMemoryPartyKey(interaction.user.id));
+      await handleDisband({ ...ctx, i, monster });
       return collector.stop();
     } else if (i.customId === "start") {
-      if (i.user.id !== interaction.user.id) {
-        return await i.reply({
-          content: "Only the party leader can start the kill.",
-          flags: [MessageFlags.Ephemeral],
-        });
-      }
-
-      const cds: [number, User][] = await Promise.all(
-        [interaction.user, ...partyMems].map(async (pm) => [
-          await storage.checkKillCd(pm.id, monster.id),
-          pm,
-        ])
-      );
-
-      const onCd = cds.flatMap((cd) =>
-        cd[0] > 0
-          ? [`${cd[1]}: ${Math.floor(cd[0] / 60)} mins ${cd[0] % 60} secs`]
-          : []
-      );
-
-      if (onCd.length > 0) {
-        return await i.reply({
-          content: `The following members are on cooldown for ${
-            monster.name
-          }:\n${onCd.join("\n")}`,
-          flags: [MessageFlags.Ephemeral],
-        });
-      }
-
-      const rewards = monster.kill(1, {}).items();
-      const { got, total, totalRaw } = parseLoot(rewards);
-      const giveRewardsTo = [
-        interaction.user.id,
-        ...partyMems.map((pm) => pm.id),
-      ];
-      const finalCoins = Math.floor(totalRaw / (partyMems.length + 1));
-      const memList = [interaction.user, ...partyMems]
-        .map((pm) => `- ${pm} (+${Util.toKMB(finalCoins)})`)
-        .join("\n");
-
-      const cooldownIdx = Math.max(partySizes.indexOf(partyMems.length + 1), 0);
-      const cooldown = cooldowns[cooldownIdx];
-      const content = {
-        embeds: [
-          new EmbedBuilder()
-            .setColor("Blurple")
-            .setTitle(
-              `${monster.name}: ${interaction.user.displayName}'s party (success)`
-            )
-            .setDescription(
-              `Success! You killed ${monster.name} for:\n${got}\n\n${
-                partyMems.length > 0
-                  ? `Rewards have been sold and split equally amongst party members:\n${memList}\nTotal: ${total}`
-                  : `You killed ${monster.name} alone, so you reaped all the rewards! (${total})\nBanked all rewards.`
-              }\n\n${
-                partyMems.length > 0 ? "**Each member has " : "**You have "
-              } been put on a cooldown for ${monster.name} for ${
-                cooldown / 60
-              } minute(s).**`
-            ),
-        ],
-        components: [],
-      };
-
-      await Promise.all([
-        interaction.deleteReply(),
-        i.channel?.isSendable() ? i.channel.send(content) : i.reply(content),
-      ]);
-
-      if (partyMems.length > 0) {
-        for (const id of giveRewardsTo) {
-          await storage.updateCoins(id, finalCoins);
-          await storage.setKillCd(id, monster.id, cooldown);
-        }
-      } else {
-        await storage.updateInventory(interaction.user.id, rewards);
-        await storage.setKillCd(interaction.user.id, monster.id, cooldown);
-      }
-
-      storage.delInMemory(getInMemoryPartyKey(interaction.user.id));
-      collector.stop();
+      await handleStart({
+        ...ctx,
+        i,
+        monster,
+        partyMems,
+        partySizes,
+        cooldowns,
+      });
+      return collector.stop();
     } else {
-      if (i.user.id !== interaction.user.id) {
-        return await i.reply({
-          content: "Only the party leader can remove members from a party.",
-          flags: [MessageFlags.Ephemeral],
-        });
-      }
-      const idx = partyMems.map((pm) => pm.id).indexOf(i.customId);
-      if (idx === -1)
-        return await i.reply({
-          content: "Error: Could not find member in party.",
-          flags: [MessageFlags.Ephemeral],
-        });
-
-      partyMems.splice(idx, 1);
-      return await i.update(
-        renderActiveParty(interaction.user, partyMems, monster)
-      );
+      await handleRemove({ ...ctx, i, monster, partyMems });
     }
   });
 }
