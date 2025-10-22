@@ -8,6 +8,7 @@ import {
   ButtonInteraction,
   ButtonStyle,
   CacheType,
+  ChatInputCommandInteraction,
   ComponentType,
   EmbedBuilder,
   MessageFlags,
@@ -17,6 +18,23 @@ import { metadata } from "./monsters/_kill-metadata.js";
 
 function getInMemoryPartyKey(userId: string) {
   return `${userId}:parties`;
+}
+
+async function sendCooldownMessage(ctx: {
+  i: ButtonInteraction<CacheType> | ChatInputCommandInteraction<CacheType>;
+  cooldown: number;
+  monster: Monster;
+}): Promise<void> {
+  const { i, cooldown, monster } = ctx;
+
+  await i.reply({
+    content: `You are currently on cooldown for monster: ${
+      monster.name
+    }.\nYou can try again in \`${Math.floor(cooldown / 60)} minutes and ${
+      cooldown % 60
+    } seconds\`.`,
+    flags: [MessageFlags.Ephemeral],
+  });
 }
 
 function renderActiveParty(
@@ -84,9 +102,10 @@ async function handleJoin(
     monster: Monster;
     partyMems: User[];
     partyFull: boolean;
+    onCd: { [userId: string]: number };
   }
 ) {
-  const { interaction, i, monster, partyMems, partyFull } = ctx;
+  const { interaction, storage, i, monster, partyMems, partyFull, onCd } = ctx;
   if (i.user.id === interaction.user.id || partyMems.includes(i.user)) {
     return await i.reply({
       content: "You are already in this party.",
@@ -97,11 +116,22 @@ async function handleJoin(
       content: "This party is full!",
       flags: [MessageFlags.Ephemeral],
     });
-  } else {
+  } else if (!(i.user.id in onCd)) {
+    const cooldown = await storage.checkKillCd(i.user.id, monster.id);
+
+    if (cooldown > 0) {
+      onCd[i.user.id] = cooldown;
+      return await sendCooldownMessage({ i, cooldown, monster });
+    }
+
     partyMems.push(i.user);
     return await i.update(
       renderActiveParty(interaction.user, partyMems, monster)
     );
+  } else {
+    // we prevent spam to DB by repeated calls
+    const cooldown = onCd[i.user.id];
+    return await sendCooldownMessage({ i, cooldown, monster });
   }
 }
 
@@ -136,14 +166,15 @@ async function handleStart(
     partySizes: number[];
     cooldowns: number[];
   }
-) {
+): Promise<boolean> {
   const { interaction, storage, i, monster, partyMems, partySizes, cooldowns } =
     ctx;
   if (i.user.id !== interaction.user.id) {
-    return await i.reply({
+    await i.reply({
       content: "Only the party leader can start the kill.",
       flags: [MessageFlags.Ephemeral],
     });
+    return false;
   }
 
   const cds: [number, User][] = await Promise.all(
@@ -160,12 +191,14 @@ async function handleStart(
   );
 
   if (onCd.length > 0) {
-    return await i.reply({
+    await i.reply({
       content: `The following members are on cooldown for ${
         monster.name
       }:\n${onCd.join("\n")}`,
       flags: [MessageFlags.Ephemeral],
     });
+
+    return false;
   }
 
   const rewards = monster.kill(1, {}).items();
@@ -216,6 +249,7 @@ async function handleStart(
   }
 
   storage.delInMemory(getInMemoryPartyKey(interaction.user.id));
+  return true;
 }
 
 async function handleRemove(
@@ -282,15 +316,16 @@ async function killTeamMonster(ctx: CommandContext, monster: Monster) {
     storage.delInMemory(getInMemoryPartyKey(interaction.user.id));
   });
 
+  const onCd: { [userId: string]: number } = {};
   collector?.on("collect", async (i) => {
     if (i.customId === "join") {
       const partyFull = partyMems.length + 1 >= Math.max(...partySizes);
-      await handleJoin({ ...ctx, i, monster, partyMems, partyFull });
+      await handleJoin({ ...ctx, i, monster, partyMems, partyFull, onCd });
     } else if (i.customId === "disband") {
       await handleDisband({ ...ctx, i, monster });
       return collector.stop();
     } else if (i.customId === "start") {
-      await handleStart({
+      const started = await handleStart({
         ...ctx,
         i,
         monster,
@@ -298,7 +333,8 @@ async function killTeamMonster(ctx: CommandContext, monster: Monster) {
         partySizes,
         cooldowns,
       });
-      return collector.stop();
+
+      if (started) return collector.stop();
     } else {
       await handleRemove({ ...ctx, i, monster, partyMems });
     }
