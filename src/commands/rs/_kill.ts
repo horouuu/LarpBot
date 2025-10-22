@@ -314,7 +314,28 @@ async function killSoloMonster(
   const { interaction, storage } = ctx;
   const rewards = monster.kill(1, {}).items();
   const { got, total } = parseLoot(rewards);
-  const msg = `You killed [${monster.name}](<${monster.data.wikiURL}>)!\n${got}\n### Total loot: ${total}`;
+  const content = {
+    embeds: [
+      new EmbedBuilder()
+        .setAuthor({
+          name: interaction.user.displayName,
+          iconURL: interaction.user.displayAvatarURL(),
+        })
+        .setTitle(`${monster.name}`)
+        .setDescription(`${got}\n\n**Banked all loot (${total}).**`)
+        .setURL(monster.data.wikiURL)
+        .setFooter(
+          cds
+            ? {
+                text: `\n\nYou have been put on a cooldown for ${
+                  monster.name
+                } for ${cds[0] / 60} minute(s).`,
+              }
+            : null
+        )
+        .setColor("DarkOrange"),
+    ],
+  };
 
   const cooldownToSet = cds && cds.length > 0 ? cds[0] : null;
   await storage.updateInventory(interaction.user.id, rewards);
@@ -323,7 +344,7 @@ async function killSoloMonster(
   }
 
   await storage.updateInventory(interaction.user.id, rewards);
-  await interaction.reply(msg);
+  await interaction.reply(content);
 }
 
 export async function killMonster(ctx: CommandContext) {
