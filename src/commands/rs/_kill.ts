@@ -306,6 +306,26 @@ async function killTeamMonster(ctx: CommandContext, monster: Monster) {
   });
 }
 
+async function killSoloMonster(
+  ctx: CommandContext,
+  monster: Monster,
+  cds: number[] | null
+) {
+  const { interaction, storage } = ctx;
+  const rewards = monster.kill(1, {}).items();
+  const { got, total } = parseLoot(rewards);
+  const msg = `You killed [${monster.name}](<${monster.data.wikiURL}>)!\n${got}\n### Total loot: ${total}`;
+
+  const cooldownToSet = cds && cds.length > 0 ? cds[0] : null;
+  await storage.updateInventory(interaction.user.id, rewards);
+  if (cooldownToSet) {
+    await storage.setKillCd(interaction.user.id, monster.id, cooldownToSet);
+  }
+
+  await storage.updateInventory(interaction.user.id, rewards);
+  await interaction.reply(msg);
+}
+
 export async function killMonster(ctx: CommandContext) {
   const { interaction, storage } = ctx;
   const monster = interaction.options.getString("monster") ?? "_____";
@@ -350,23 +370,9 @@ export async function killMonster(ctx: CommandContext) {
         });
       }
     } else {
-      const rewards = found.kill(1, {}).items();
-      const { got, total } = parseLoot(rewards);
-      const msg = `You killed [${found.name}](<${found.data.wikiURL}>)!\n${got}\n### Total loot: ${total}`;
-
-      const cooldownToSet =
-        cooldowns && cooldowns.length > 0 ? cooldowns[0] : undefined;
-      await storage.updateInventory(interaction.user.id, rewards);
-      if (cooldownToSet) {
-        await storage.setKillCd(interaction.user.id, found.id, cooldownToSet);
-      }
-      await interaction.reply(msg);
+      await killSoloMonster(ctx, found, cooldowns);
     }
   } else {
-    const rewards = found.kill(1, {}).items();
-    const { got, total } = parseLoot(rewards);
-    const msg = `You killed [${found.name}](<${found.data.wikiURL}>)!\n${got}\n### Total loot: ${total}`;
-    await storage.updateInventory(interaction.user.id, rewards);
-    await interaction.reply(msg);
+    await killSoloMonster(ctx, found, null);
   }
 }
