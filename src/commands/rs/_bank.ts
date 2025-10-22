@@ -1,8 +1,10 @@
+import { promptConfirmationDialog } from "@commands/lib/_cmd-utils";
 import { CommandContext } from "@types-local/commands";
 import {
   ActionRowBuilder,
   APIEmbedField,
   ButtonBuilder,
+  ButtonInteraction,
   ButtonStyle,
   ComponentType,
   EmbedBuilder,
@@ -182,91 +184,71 @@ async function clearUserBank(
   }
   await storage.updateInventory(interaction.user.id, newBank);
 }
+
 export async function sellAllItems(ctx: CommandContext) {
   const { interaction } = ctx;
   const { totalValue, newBank } = await calculateTotalBankValue(ctx);
-  const msg = await interaction.reply({
-    embeds: [
-      new EmbedBuilder()
-        .setTitle(`Selling: All items`)
-        .setDescription(
-          `Are you sure you wish to sell all items in your bank for \`${totalValue.toLocaleString()}\` coins?`
-        )
-        .setColor("DarkRed"),
-    ],
-    components: [
-      new ActionRowBuilder<ButtonBuilder>().addComponents(
-        new ButtonBuilder()
-          .setCustomId("sell")
-          .setLabel("Sell")
-          .setStyle(ButtonStyle.Danger),
-        new ButtonBuilder()
-          .setCustomId("cancel")
-          .setLabel("Cancel")
-          .setStyle(ButtonStyle.Secondary)
-      ),
-    ],
-    flags: [MessageFlags.Ephemeral],
-    withResponse: true,
-  });
-  const collector = msg.resource?.message?.createMessageComponentCollector({
-    filter: (i) => i.user.id === interaction.user.id,
-    time: 15000,
-    componentType: ComponentType.Button,
-  });
-  collector?.on("collect", async (i) => {
-    if (i.customId === "sell") {
-      const content = {
-        embeds: [
-          new EmbedBuilder()
-            .setTitle("Items Sold")
-            .setColor("DarkGold")
-            .setAuthor({
-              iconURL: interaction.user.avatarURL() ?? "",
-              name: interaction.user.displayName,
-            })
-            .setDescription(
-              `You have sold all items in your bank for \`${totalValue.toLocaleString()}\` coins.`
-            ),
-        ],
-        components: [],
-      };
 
-      if (i.channel?.isSendable()) {
-        await i.channel.send(content);
-        await i.update({
-          embeds: [
-            new EmbedBuilder()
-              .setColor("DarkGreen")
-              .setDescription("Sell request sent."),
-          ],
-          components: [],
-        });
-      } else {
-        await i.update(content);
-      }
+  const handleSell = async (i: ButtonInteraction) => {
+    const content = {
+      embeds: [
+        new EmbedBuilder()
+          .setTitle("Items Sold")
+          .setColor("DarkGold")
+          .setAuthor({
+            iconURL: interaction.user.avatarURL() ?? "",
+            name: interaction.user.displayName,
+          })
+          .setDescription(
+            `You have sold all items in your bank for \`${totalValue.toLocaleString()}\` coins.`
+          ),
+      ],
+      components: [],
+    };
 
-      await clearUserBank(ctx, newBank, totalValue);
-    } else if (i.customId === "cancel") {
+    if (i.channel?.isSendable()) {
+      await i.channel.send(content);
       await i.update({
         embeds: [
           new EmbedBuilder()
-            .setDescription("Sale cancelled")
-            .setColor("DarkRed"),
+            .setColor("DarkGreen")
+            .setDescription("Sell request sent."),
         ],
         components: [],
       });
+    } else {
+      await i.update(content);
     }
-    collector.stop();
-  });
-  collector?.on("end", async (_, reason) => {
-    if (reason === "time") {
-      interaction.editReply({
-        embeds: [
-          new EmbedBuilder().setDescription("Sale expired").setColor("DarkRed"),
-        ],
-        components: [],
-      });
+
+    await clearUserBank(ctx, newBank, totalValue);
+  };
+
+  const handleCancel = async (i: ButtonInteraction) => {
+    await i.update({
+      embeds: [
+        new EmbedBuilder().setDescription("Sale cancelled").setColor("DarkRed"),
+      ],
+      components: [],
+    });
+  };
+
+  const handleExpiry = async () => {
+    await interaction.editReply({
+      embeds: [
+        new EmbedBuilder().setDescription("Sale expired").setColor("DarkRed"),
+      ],
+      components: [],
+    });
+  };
+
+  await promptConfirmationDialog(
+    interaction,
+    { handleConfirm: handleSell, handleCancel, handleExpiry },
+    {
+      confirmButtonLabel: "Sell",
+      title: "Selling: All items",
+      prompt: `Are you sure you wish to sell all items in your bank for \`${totalValue.toLocaleString()}\` coins?`,
+      expiryMs: 15000,
     }
-  });
+  );
 }
