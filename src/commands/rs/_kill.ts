@@ -44,26 +44,6 @@ const metadata: MonsterMetaData = {
     partySizes: [1, 2, 3],
     cooldowns: [1 * 60, 30, 15],
   },
-  12192: {
-    teamBoss: false,
-    partySizes: [1],
-    cooldowns: [5 * 60],
-  },
-  12215: {
-    teamBoss: false,
-    partySizes: [1],
-    cooldowns: [5 * 60],
-  },
-  12224: {
-    teamBoss: false,
-    partySizes: [1],
-    cooldowns: [5 * 60],
-  },
-  12205: {
-    teamBoss: false,
-    partySizes: [1],
-    cooldowns: [5 * 60],
-  },
 };
 
 function renderActiveParty(
@@ -266,7 +246,7 @@ async function killTeamMonster(ctx: CommandContext, monster: Monster) {
         ],
         components: [],
       };
-
+      
       await Promise.all([
         interaction.deleteReply(),
         i.channel?.isSendable() ? i.channel.send(content) : i.reply(content),
@@ -334,8 +314,7 @@ export async function killMonster(ctx: CommandContext) {
   }
 
   if (found.id in metadata) {
-    const { teamBoss, cooldowns } = metadata[found.id];
-
+    const { teamBoss } = metadata[found.id];
     if (teamBoss) {
       const existingParty = storage.getInMemory(
         getInMemoryPartyKey(interaction.user.id)
@@ -349,23 +328,18 @@ export async function killMonster(ctx: CommandContext) {
           flags: [MessageFlags.Ephemeral],
         });
       }
-    } else {
-      const rewards = found.kill(1, {}).items();
-      const { got, total } = parseLoot(rewards);
-      const msg = `You killed [${found.name}](<${found.data.wikiURL}>)!\n${got}\n### Total loot: ${total}`;
-
-      const cooldownToSet =
-        cooldowns && cooldowns.length > 0 ? cooldowns[0] : undefined;
-      await storage.updateInventory(interaction.user.id, rewards);
-      if (cooldownToSet) {
-        await storage.setKillCd(interaction.user.id, found.id, cooldownToSet);
-      }
-      await interaction.reply(msg);
     }
   } else {
     const rewards = found.kill(1, {}).items();
     const { got, total } = parseLoot(rewards);
     const msg = `You killed [${found.name}](<${found.data.wikiURL}>)!\n${got}\n### Total loot: ${total}`;
+    if (found.id in metadata) {
+      const { cooldowns } = metadata[found.id];
+      if (cooldowns.length > 0) {
+        // set cd
+      }
+    }
+
     await storage.updateInventory(interaction.user.id, rewards);
     await interaction.reply(msg);
   }
