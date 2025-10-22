@@ -26,6 +26,7 @@ type ConfirmationDialogOpts = {
 type ConfirmationDialogHandlers = {
   handleConfirm?: (i: ButtonInteraction<CacheType>) => Promise<any>;
   handleCancel?: (i: ButtonInteraction<CacheType>) => Promise<any>;
+  handleIgnore?: (i: ButtonInteraction<CacheType>) => Promise<any>;
   handleExpiry?: () => Promise<any>;
 };
 
@@ -34,6 +35,7 @@ export async function promptConfirmationDialog(
   {
     handleConfirm,
     handleCancel,
+    handleIgnore,
     handleExpiry,
   }: ConfirmationDialogHandlers = {},
   {
@@ -67,6 +69,13 @@ export async function promptConfirmationDialog(
             .setColor("DarkRed"),
         ],
         components: [],
+      });
+
+  if (!handleIgnore)
+    handleIgnore = async (i) =>
+      await i.reply({
+        content: "Only the sender of an interaction can confirm it!",
+        flags: [MessageFlags.Ephemeral],
       });
 
   if (!handleExpiry)
@@ -134,6 +143,6 @@ export async function promptConfirmationDialog(
 
   if (!ephemeral)
     collector.on("ignore", async (i) => {
-      await i.reply("Only the sender of an interaction can confirm it!");
+      await handleIgnore(i);
     });
 }
