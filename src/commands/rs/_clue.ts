@@ -34,12 +34,12 @@ export async function openClue(ctx: CommandContext) {
   const { interaction, storage } = ctx;
   const numberToOpen = interaction.options.getNumber("number") ?? 1;
   const cdSecsPerClue =
-    numberToOpen >= 10 ? 12 * 2 : numberToOpen > 1 ? 12 + 4.5 : 12;
-  const bulkLimit = Math.floor(3600 / cdSecsPerClue);
+    numberToOpen >= 5 ? 12 * 2 : numberToOpen > 1 ? 12 + 4.5 : 12;
+  const bulkLimit = Math.floor(300 / cdSecsPerClue);
   if (await checkCooldown(ctx)) return;
   if (numberToOpen > bulkLimit) {
     return await interaction.reply({
-      content: `You may only open up to an hour's worth of clues at a time (${bulkLimit}).`,
+      content: `You may only open up to five minutes' worth of clues at a time (${bulkLimit}).`,
       flags: [MessageFlags.Ephemeral],
     });
   }
