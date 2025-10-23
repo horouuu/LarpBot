@@ -22,7 +22,18 @@ const rsData = new SlashCommandBuilder()
       .setName("clue")
       .setDescription("Run clue-related commands.")
       .addSubcommand((opt) =>
-        opt.setName("open").setDescription("Open a random clue casket!")
+        opt
+          .setName("open")
+          .setDescription("Open a random clue casket!")
+          .addNumberOption((opt) =>
+            opt
+              .setName("number")
+              .setDescription(
+                "Number of clues to open. More than one may incur extra cooldown per clue."
+              )
+              .setMinValue(1)
+              .setRequired(false)
+          )
       )
       .addSubcommand((opt) =>
         opt.setName("stats").setDescription("View your clue stats.")

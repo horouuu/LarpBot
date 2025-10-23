@@ -16,6 +16,9 @@ type RetrievedGatekept = {
   guildId: string;
   channelId: string;
 };
+
+export type RsCdStores = "clues";
+
 export abstract class Storage {
   abstract getInMemory(key: string): string | null;
   abstract setInMemory(key: string, value: string): void;
@@ -77,6 +80,14 @@ export abstract class Storage {
   ): Promise<void>;
 
   abstract checkKillCd(userId: string, monsterId: number): Promise<number>;
+
+  abstract setCdByKey(
+    userId: string,
+    cdKey: RsCdStores,
+    cdSecs: number
+  ): Promise<void>;
+
+  abstract checkCdByKey(userId: string, cdKey: RsCdStores): Promise<number>;
 
   abstract updateInventory(
     userId: string,
