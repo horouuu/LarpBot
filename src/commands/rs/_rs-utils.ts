@@ -1,3 +1,4 @@
+import { ColorResolvable } from "discord.js";
 import { Item, Util } from "oldschooljs";
 import { MonsterData } from "oldschooljs/dist/meta/monsterData";
 import SimpleMonster from "oldschooljs/dist/structures/SimpleMonster";
@@ -67,4 +68,17 @@ export function parseLoot(rewards: [Item, number][]) {
 export function attachWikiURL(monster: SimpleMonster, wikiURL: string) {
   monster.data = {} as MonsterData;
   monster.data.wikiURL = wikiURL;
+}
+
+export function getTierColor(
+  value: number,
+  defaultColor: ColorResolvable = "Greyple"
+) {
+  return value >= 1000000000
+    ? "Fuchsia"
+    : value >= 100000000
+    ? "Red"
+    : value >= 7500000
+    ? "Gold"
+    : defaultColor;
 }

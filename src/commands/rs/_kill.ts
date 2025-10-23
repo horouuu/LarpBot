@@ -1,6 +1,6 @@
 import { Command, CommandContext } from "@types-local/commands";
 import { Monster, Util } from "oldschooljs";
-import { parseLoot } from "./_rs-utils.js";
+import { getTierColor, parseLoot } from "./_rs-utils.js";
 import { NewMonsters } from "./monsters/index.js";
 import {
   ActionRowBuilder,
@@ -214,7 +214,7 @@ async function handleStart(
   const content = {
     embeds: [
       new EmbedBuilder()
-        .setColor("Blurple")
+        .setColor(getTierColor(totalRaw, "Blurple"))
         .setTitle(
           `${monster.name}: ${interaction.user.displayName}'s party (success)`
         )
@@ -348,7 +348,7 @@ async function killSoloMonster(
 ) {
   const { interaction, storage } = ctx;
   const rewards = monster.kill(1, {}).items();
-  const { got, total } = parseLoot(rewards);
+  const { got, total, totalRaw } = parseLoot(rewards);
   const content = {
     embeds: [
       new EmbedBuilder()
@@ -368,7 +368,7 @@ async function killSoloMonster(
               }
             : null
         )
-        .setColor("DarkOrange"),
+        .setColor(getTierColor(totalRaw, "DarkOrange")),
     ],
   };
 

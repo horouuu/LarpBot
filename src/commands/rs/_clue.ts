@@ -1,6 +1,6 @@
 import { CommandContext } from "@types-local/commands";
 import { Clues } from "oldschooljs";
-import { getEmptyClueData, parseLoot } from "./_rs-utils.js";
+import { getEmptyClueData, getTierColor, parseLoot } from "./_rs-utils.js";
 import { toKMB } from "oldschooljs/dist/util/smallUtils.js";
 import { EmbedBuilder, MessageFlags } from "discord.js";
 
@@ -69,15 +69,7 @@ export async function openClue(ctx: CommandContext) {
   await interaction.reply({
     embeds: [
       new EmbedBuilder()
-        .setColor(
-          totalRaw >= 1000000000
-            ? "Fuchsia"
-            : totalRaw >= 100000000
-            ? "Red"
-            : totalRaw >= 7500000
-            ? "Gold"
-            : "Greyple"
-        )
+        .setColor(getTierColor(totalRaw))
         .setAuthor({
           name: interaction.user.displayName,
           iconURL: interaction.user.displayAvatarURL() ?? "",
