@@ -16,10 +16,11 @@ async function checkCooldown(ctx: CommandContext): Promise<boolean> {
   const cd = await storage.checkCdByKey(interaction.user.id, "clues");
 
   if (cd > 0) {
+    const mins = Math.floor(cd / 60);
     await interaction.reply({
-      content: `You are currently on cooldown for clues!\nYou can try again in ${Math.floor(
-        cd
-      )} second(s).`,
+      content: `You are currently on cooldown for clues!\nYou can try again in ${
+        mins >= 1 ? `${mins} minute(s)` : `${cd} second(s).`
+      }`,
       flags: [MessageFlags.Ephemeral],
     });
 
@@ -31,14 +32,28 @@ async function checkCooldown(ctx: CommandContext): Promise<boolean> {
 
 export async function openClue(ctx: CommandContext) {
   const { interaction, storage } = ctx;
-
+  const numberToOpen = interaction.options.getNumber("number") ?? 1;
+  const cdSecsPerClue =
+    numberToOpen >= 10 ? 12 * 2 : numberToOpen > 1 ? 12 + 4.5 : 12;
+  const bulkLimit = Math.floor(3600 / cdSecsPerClue);
   if (await checkCooldown(ctx)) return;
+  if (numberToOpen > bulkLimit) {
+    return await interaction.reply({
+      content: `You may only open up to an hour's worth of clues at a time (${bulkLimit}).`,
+      flags: [MessageFlags.Ephemeral],
+    });
+  }
 
   const roll = Math.round(Math.random() * 3);
   const res = clueList[roll];
-  const rewards = res.tier.open(res.num).items();
+  const rewards = res.tier
+    .open(res.num * numberToOpen)
+    .items()
+    .sort((a, b) => b[0].price - a[0].price);
 
   const { got, total, totalRaw } = parseLoot(rewards);
+
+  const lines = got.split("\n").length;
 
   const toUpdate = getEmptyClueData();
   const clueType = res.name.toLowerCase() as
@@ -67,13 +82,29 @@ export async function openClue(ctx: CommandContext) {
           name: interaction.user.displayName,
           iconURL: interaction.user.displayAvatarURL() ?? "",
         })
-        .setTitle(`Clue scroll (${res.name.toLowerCase()})`)
-        .setDescription(`${got}`)
+        .setTitle(
+          `${
+            numberToOpen > 1 ? `${numberToOpen}x ` : ""
+          }Clue scroll (${res.name.toLowerCase()})`
+        )
+        .setDescription(
+          `${
+            numberToOpen <= 5
+              ? got
+              : `${got.split("\n").slice(0, 5).join("\n")}\n...and ${
+                  lines - 5
+                } more lines...`
+          }`
+        )
         .setFooter({ text: `Total loot: ${total}` }),
     ],
   });
 
-  await storage.setCdByKey(interaction.user.id, "clues", 12);
+  await storage.setCdByKey(
+    interaction.user.id,
+    "clues",
+    cdSecsPerClue * numberToOpen
+  );
   await storage.updateInventory(interaction.user.id, rewards);
 }
 
