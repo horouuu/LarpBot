@@ -380,8 +380,8 @@ async function killSoloMonster(
   if (cooldownToSet) {
     await storage.setKillCd(interaction.user.id, monster.id, cooldownToSet);
   }
-  
-  await storage.updateKc(ctx.interaction.user.id, monster.id);
+
+  await storage.updateKcs(ctx.interaction.user.id, [[monster.id, 1]]);
   await storage.updateInventory(interaction.user.id, rewards);
   await interaction.reply(content);
 }

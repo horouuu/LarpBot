@@ -172,7 +172,7 @@ export class RedisStorage implements Storage {
       throw new Error("Failed to write to database!");
     }
   }
-  
+
   private async _hGetBucket(
     baseKey: string,
     bucketSize: number,
@@ -503,13 +503,24 @@ export class RedisStorage implements Storage {
     invs.reduce((prev, curr) => Object.assign(prev, curr), final);
     return final;
   }
-  
-  public async updateKc(userId: string, monsterId: number): Promise<void> {
-    await this._hIncrByFieldsBucket(`users:${userId}:rs:kcs`, 1000, { [monsterId]: 1 });
+
+  public async updateKcs(
+    userId: string,
+    kcs: [number, number][]
+  ): Promise<void> {
+    await this._hIncrByFieldsBucket(
+      `users:${userId}:rs:kcs`,
+      1000,
+      Object.fromEntries(kcs)
+    );
   }
 
   public async getKc(userId: string, monsterId: number): Promise<number> {
-    const kc = await this._hGetBucket(`users:${userId}:rs:kcs`, 1000, monsterId);
+    const kc = await this._hGetBucket(
+      `users:${userId}:rs:kcs`,
+      1000,
+      monsterId
+    );
     return kc !== null ? Number(kc) : 0;
   }
 
