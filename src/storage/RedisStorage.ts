@@ -173,6 +173,23 @@ export class RedisStorage implements Storage {
     }
   }
 
+  private async _hGetBucket(
+    baseKey: string,
+    bucketSize: number,
+    id: number
+  ): Promise<string | null> {
+    try {
+      const bucketIndex = Math.floor(id / bucketSize);
+      const key = `${baseKey}:${bucketIndex}`;
+      const field = String(id);
+      const value = await this._client.hGet(key, field);
+      return value;
+    } catch (e) {
+      console.error(e);
+      throw new Error("Failed to read from database!");
+    }
+  }
+
   private async _hIncrByFields(key: string, obj: Object) {
     try {
       const batch = this._client.multi();
@@ -485,6 +502,26 @@ export class RedisStorage implements Storage {
     const final: { [id: string]: string } = {};
     invs.reduce((prev, curr) => Object.assign(prev, curr), final);
     return final;
+  }
+
+  public async updateKcs(
+    userId: string,
+    kcs: [number, number][]
+  ): Promise<void> {
+    await this._hIncrByFieldsBucket(
+      `users:${userId}:rs:kcs`,
+      1000,
+      Object.fromEntries(kcs)
+    );
+  }
+
+  public async getKc(userId: string, monsterId: number): Promise<number> {
+    const kc = await this._hGetBucket(
+      `users:${userId}:rs:kcs`,
+      1000,
+      monsterId
+    );
+    return kc !== null ? Number(kc) : 0;
   }
 
   private async _setCd(key: string, cdKey: string, cdSecs: number) {

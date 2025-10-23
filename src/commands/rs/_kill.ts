@@ -184,6 +184,10 @@ async function handleStart(
     ])
   );
 
+  [interaction.user, ...partyMems].forEach(
+    async (mem) => await storage.updateKcs(mem.id, [[monster.id, 1]])
+  );
+
   const onCd = cds.flatMap((cd) =>
     cd[0] > 0
       ? [`${cd[1]}: ${Math.floor(cd[0] / 60)} mins ${cd[0] % 60} secs`]
@@ -378,6 +382,7 @@ async function killSoloMonster(
     await storage.setKillCd(interaction.user.id, monster.id, cooldownToSet);
   }
 
+  await storage.updateKcs(ctx.interaction.user.id, [[monster.id, 1]]);
   await storage.updateInventory(interaction.user.id, rewards);
   await interaction.reply(content);
 }

@@ -73,6 +73,10 @@ export abstract class Storage {
 
   abstract getInventory(userId: string): Promise<{ [id: string]: string }>;
 
+  abstract updateKcs(userId: string, kcs: [number, number][]): Promise<void>;
+
+  abstract getKc(userId: string, monsterId: number): Promise<number>;
+
   abstract setKillCd(
     userId: string,
     monsterId: number,

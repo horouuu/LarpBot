@@ -13,6 +13,7 @@ import { checkBalance } from "./rs/_balance.js";
 import { transferCoins } from "./rs/_transfer.js";
 import { sellItems } from "./rs/_sell.js";
 import { showCoinLb } from "./rs/_lb.js";
+import { getKc } from "./rs/_kc.js";
 
 const rsData = new SlashCommandBuilder()
   .setName("rs")
@@ -49,6 +50,17 @@ const rsData = new SlashCommandBuilder()
           .setDescription("Name of the monster to simulate killing.")
           .setRequired(true)
       )
+  )
+  .addSubcommand((opt) =>
+    opt
+      .setName("kc")
+      .setDescription("Get kill count of a monster.")
+      .addStringOption((opt) =>
+        opt
+          .setName("monster")
+          .setDescription("Name of the monster to get kill count of")
+          .setRequired(true)
+    )
   )
   .addSubcommandGroup((opt) =>
     opt
@@ -153,6 +165,9 @@ const rs = {
           break;
         case "kill":
           await killMonster(ctx);
+          break;
+        case "kc":
+          await getKc(ctx);
           break;
         case "stats":
           if (cmdGroup === "clue") {
