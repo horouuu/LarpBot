@@ -4,6 +4,7 @@ import {
   persistedConfigs,
   PersistedConfigs,
   PersistedKey,
+  RsCdStores,
   Storage,
 } from "@storage";
 import { OrNullEntries } from "@types-local/util";
@@ -486,13 +487,8 @@ export class RedisStorage implements Storage {
     return final;
   }
 
-  public async setKillCd(
-    userId: string,
-    monsterId: number,
-    cdSecs: number
-  ): Promise<void> {
-    const key = `users:${userId}:rs:cooldowns:monsters`;
-    await this._hIncrByFields(key, { [monsterId]: 1 });
+  private async _setCd(key: string, cdKey: string, cdSecs: number) {
+    await this._hIncrByFields(key, { [cdKey]: 1 });
     try {
       await this._client.sendCommand([
         "HEXPIRE",
@@ -500,7 +496,7 @@ export class RedisStorage implements Storage {
         cdSecs.toString(),
         "FIELDS",
         "1",
-        monsterId.toString(),
+        cdKey,
       ]);
     } catch (e) {
       console.error(e);
@@ -508,18 +504,41 @@ export class RedisStorage implements Storage {
     }
   }
 
-  public async checkKillCd(userId: string, monsterId: number) {
-    const key = `users:${userId}:rs:cooldowns:monsters`;
-    const cdNum = await this._hGet(key, monsterId.toString());
+  private async _checkCd(key: string, cdKey: string) {
+    const cdNum = await this._hGet(key, cdKey);
     if (cdNum === null || Number.isNaN(parseInt(cdNum))) return 0;
     try {
-      const ttl = await this._client.HTTL(key, monsterId.toString());
+      const ttl = await this._client.HTTL(key, cdKey);
       if (ttl === null || ttl[0] < 0) return 0;
       return parseInt(cdNum) * ttl[0];
     } catch (e) {
       console.error(e);
       throw new Error("Failed to check kill cd through DB.");
     }
+  }
+
+  public async setKillCd(
+    userId: string,
+    monsterId: number,
+    cdSecs: number
+  ): Promise<void> {
+    const key = `users:${userId}:rs:cooldowns:monsters`;
+    await this._setCd(key, monsterId.toString(), cdSecs);
+  }
+
+  public async checkKillCd(userId: string, monsterId: number) {
+    const key = `users:${userId}:rs:cooldowns:monsters`;
+    return await this._checkCd(key, monsterId.toString());
+  }
+
+  public async setCdByKey(userId: string, cdKey: RsCdStores, cdSecs: number) {
+    const key = `users:${userId}:rs:cooldowns:others`;
+    await this._setCd(key, cdKey, cdSecs);
+  }
+
+  public async checkCdByKey(userId: string, cdKey: RsCdStores) {
+    const key = `users:${userId}:rs:cooldowns:others`;
+    return await this._checkCd(key, cdKey);
   }
 
   public async getCoinsData(users: string[]) {

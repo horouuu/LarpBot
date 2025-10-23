@@ -2,7 +2,7 @@ import { CommandContext } from "@types-local/commands";
 import { Clues } from "oldschooljs";
 import { getEmptyClueData, parseLoot } from "./_rs-utils.js";
 import { toKMB } from "oldschooljs/dist/util/smallUtils.js";
-import { EmbedBuilder } from "discord.js";
+import { EmbedBuilder, MessageFlags } from "discord.js";
 
 const clueList = [
   { tier: Clues.Medium, num: 1, name: "Medium" },
@@ -11,8 +11,29 @@ const clueList = [
   { tier: Clues.Master, num: 1, name: "Master" },
 ];
 
+async function checkCooldown(ctx: CommandContext): Promise<boolean> {
+  const { interaction, storage } = ctx;
+  const cd = await storage.checkCdByKey(interaction.user.id, "clues");
+
+  if (cd > 0) {
+    await interaction.reply({
+      content: `You are currently on cooldown for clues!\nYou can try again in ${Math.floor(
+        cd
+      )} second(s).`,
+      flags: [MessageFlags.Ephemeral],
+    });
+
+    return true;
+  }
+
+  return false;
+}
+
 export async function openClue(ctx: CommandContext) {
   const { interaction, storage } = ctx;
+
+  if (await checkCooldown(ctx)) return;
+
   const roll = Math.round(Math.random() * 3);
   const res = clueList[roll];
   const rewards = res.tier.open(res.num).items();
@@ -34,7 +55,13 @@ export async function openClue(ctx: CommandContext) {
     embeds: [
       new EmbedBuilder()
         .setColor(
-          totalRaw > 100000000 ? "Red" : totalRaw > 7500000 ? "Gold" : "Greyple"
+          totalRaw >= 1000000000
+            ? "Fuchsia"
+            : totalRaw >= 100000000
+            ? "Red"
+            : totalRaw >= 7500000
+            ? "Gold"
+            : "Greyple"
         )
         .setAuthor({
           name: interaction.user.displayName,
@@ -46,6 +73,7 @@ export async function openClue(ctx: CommandContext) {
     ],
   });
 
+  await storage.setCdByKey(interaction.user.id, "clues", 12);
   await storage.updateInventory(interaction.user.id, rewards);
 }
 
