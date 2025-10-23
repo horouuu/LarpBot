@@ -355,26 +355,26 @@ async function killSoloMonster(
   const content = {
     embeds: [
       new EmbedBuilder()
-      .setAuthor({
-        name: interaction.user.displayName,
-        iconURL: interaction.user.displayAvatarURL(),
-      })
-      .setTitle(`${monster.name}`)
-      .setDescription(`${got}\n\n**Banked all loot (${total}).**`)
-      .setURL(monster.data.wikiURL)
-      .setFooter(
-        cds
-        ? {
-          text: `\n\nYou have been put on a cooldown for ${
-            monster.name
-          } for ${cds[0] / 60} minute(s).`,
-        }
-        : null
-      )
-      .setColor(getTierColor(totalRaw, "DarkOrange")),
+        .setAuthor({
+          name: interaction.user.displayName,
+          iconURL: interaction.user.displayAvatarURL(),
+        })
+        .setTitle(`${monster.name}`)
+        .setDescription(`${got}\n\n**Banked all loot (${total}).**`)
+        .setURL(monster.data.wikiURL)
+        .setFooter(
+          cds
+            ? {
+                text: `\n\nYou have been put on a cooldown for ${
+                  monster.name
+                } for ${cds[0] / 60} minute(s).`,
+              }
+            : null
+        )
+        .setColor(getTierColor(totalRaw, "DarkOrange")),
     ],
   };
-  
+
   const cooldownToSet = cds && cds.length > 0 ? cds[0] : null;
   await storage.updateInventory(interaction.user.id, rewards);
   if (cooldownToSet) {
