@@ -184,6 +184,9 @@ async function handleStart(
     ])
   );
 
+  await storage.updateKc(interaction.user.id, monster.id);
+  partyMems.forEach(async (mem) => await storage.updateKc(mem.id, monster.id));
+
   const onCd = cds.flatMap((cd) =>
     cd[0] > 0
       ? [`${cd[1]}: ${Math.floor(cd[0] / 60)} mins ${cd[0] % 60} secs`]
@@ -352,32 +355,33 @@ async function killSoloMonster(
   const content = {
     embeds: [
       new EmbedBuilder()
-        .setAuthor({
-          name: interaction.user.displayName,
-          iconURL: interaction.user.displayAvatarURL(),
-        })
-        .setTitle(`${monster.name}`)
-        .setDescription(`${got}\n\n**Banked all loot (${total}).**`)
-        .setURL(monster.data.wikiURL)
-        .setFooter(
-          cds
-            ? {
-                text: `\n\nYou have been put on a cooldown for ${
-                  monster.name
-                } for ${cds[0] / 60} minute(s).`,
-              }
-            : null
-        )
-        .setColor(getTierColor(totalRaw, "DarkOrange")),
+      .setAuthor({
+        name: interaction.user.displayName,
+        iconURL: interaction.user.displayAvatarURL(),
+      })
+      .setTitle(`${monster.name}`)
+      .setDescription(`${got}\n\n**Banked all loot (${total}).**`)
+      .setURL(monster.data.wikiURL)
+      .setFooter(
+        cds
+        ? {
+          text: `\n\nYou have been put on a cooldown for ${
+            monster.name
+          } for ${cds[0] / 60} minute(s).`,
+        }
+        : null
+      )
+      .setColor(getTierColor(totalRaw, "DarkOrange")),
     ],
   };
-
+  
   const cooldownToSet = cds && cds.length > 0 ? cds[0] : null;
   await storage.updateInventory(interaction.user.id, rewards);
   if (cooldownToSet) {
     await storage.setKillCd(interaction.user.id, monster.id, cooldownToSet);
   }
-
+  
+  await storage.updateKc(ctx.interaction.user.id, monster.id);
   await storage.updateInventory(interaction.user.id, rewards);
   await interaction.reply(content);
 }

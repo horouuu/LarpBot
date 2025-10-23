@@ -49,7 +49,7 @@ export async function openClue(ctx: CommandContext) {
   const rewards = res.tier
     .open(res.num * numberToOpen)
     .items()
-    .sort((a, b) => b[0].price - a[0].price);
+    .sort((a, b) => b[0].price * b[1] - a[0].price * a[1]);
 
   const { got, total, totalRaw } = parseLoot(rewards);
 
