@@ -18,7 +18,7 @@ export async function getKc(ctx: CommandContext) {
 
   const kc = await storage.getKc(interaction.user.id, found.id);
 
-  interaction.reply({
+  await interaction.reply({
     content: `You have a **${found.name}** killcount of **${kc}**.`
   });
 }
