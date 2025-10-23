@@ -89,7 +89,7 @@ export async function openClue(ctx: CommandContext) {
         )
         .setDescription(
           `${
-            numberToOpen <= 5
+            lines <= 5
               ? got
               : `${got.split("\n").slice(0, 5).join("\n")}\n...and ${
                   lines - 5
