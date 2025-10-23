@@ -184,8 +184,9 @@ async function handleStart(
     ])
   );
 
-  await storage.updateKc(interaction.user.id, monster.id);
-  partyMems.forEach(async (mem) => await storage.updateKc(mem.id, monster.id));
+  [interaction.user, ...partyMems].forEach(
+    async (mem) => await storage.updateKcs(mem.id, [[monster.id, 1]])
+  );
 
   const onCd = cds.flatMap((cd) =>
     cd[0] > 0
