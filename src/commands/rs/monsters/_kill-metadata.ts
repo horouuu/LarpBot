@@ -61,4 +61,34 @@ export const metadata: MonsterMetaData = {
     partySizes: [1],
     cooldowns: [15],
   },
+  2042: {
+    // Zulrah
+    teamBoss: false,
+    partySizes: [1],
+    cooldowns: [5],
+  },
+  3162: {
+    // Kree'arra
+    teamBoss: false,
+    partySizes: [1],
+    cooldowns: [5],
+  },
+  2215: {
+    // General Graardor
+    teamBoss: false,
+    partySizes: [1],
+    cooldowns: [5],
+  },
+  3129: {
+    // K'ril Tsutsaroth
+    teamBoss: false,
+    partySizes: [1],
+    cooldowns: [5],
+  },
+  2205: {
+    // Commander Zilyana
+    teamBoss: false,
+    partySizes: [1],
+    cooldowns: [5],
+  },
 };
