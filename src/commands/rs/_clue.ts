@@ -61,7 +61,7 @@ export async function openClue(ctx: CommandContext) {
     | "hard"
     | "elite"
     | "master";
-  toUpdate[clueType] = 1;
+  toUpdate[clueType] = numberToOpen;
   toUpdate.clueCoins = totalRaw;
 
   await storage.updateClueData(interaction.user.id, toUpdate);
