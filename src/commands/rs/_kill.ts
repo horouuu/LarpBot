@@ -1,4 +1,4 @@
-import { Command, CommandContext } from "@types-local/commands";
+import { CommandContext } from "@types-local/commands";
 import { Monster, Util } from "oldschooljs";
 import { getMinsOrSecsText, getTierColor, parseLoot } from "./_rs-utils.js";
 import { NewMonsters } from "./monsters/index.js";
