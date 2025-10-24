@@ -82,3 +82,19 @@ export function getTierColor(
     ? "Gold"
     : defaultColor;
 }
+
+export function getMinsOrSecsText(
+  secs: number,
+  mode: "default" | "verbose" = "default"
+) {
+  const getS = (num: number) => (num !== 1 ? "s" : "");
+  const mins = secs / 60;
+  const out =
+    mins < 1
+      ? `${secs} second${getS(secs)}`
+      : `${Math.floor(mins)} minute${getS(Math.floor(mins))}`;
+  const verbose = `${Math.floor(mins)} minute${getS(Math.floor(mins))} and ${
+    secs % 60
+  } second${getS(secs % 60)}`;
+  return mode === "verbose" ? verbose : out;
+}

@@ -1,6 +1,6 @@
 import { Command, CommandContext } from "@types-local/commands";
 import { Monster, Util } from "oldschooljs";
-import { getTierColor, parseLoot } from "./_rs-utils.js";
+import { getMinsOrSecsText, getTierColor, parseLoot } from "./_rs-utils.js";
 import { NewMonsters } from "./monsters/index.js";
 import {
   ActionRowBuilder,
@@ -229,9 +229,9 @@ async function handleStart(
               : `You killed ${monster.name} alone, so you reaped all the rewards! (${total})\nBanked all rewards.`
           }\n\n${
             partyMems.length > 0 ? "**Each member has " : "**You have "
-          } been put on a cooldown for ${monster.name} for ${
-            cooldown / 60
-          } minute(s).**`
+          } been put on a cooldown for ${monster.name} for ${getMinsOrSecsText(
+            cooldown
+          )}.**`
         ),
     ],
     components: [],
@@ -368,7 +368,7 @@ async function killSoloMonster(
             ? {
                 text: `\n\nYou have been put on a cooldown for ${
                   monster.name
-                } for ${cds[0] / 60} minute(s).`,
+                } for ${getMinsOrSecsText(cds[0])}.`,
               }
             : null
         )
@@ -407,9 +407,7 @@ export async function killMonster(ctx: CommandContext) {
     return await interaction.reply({
       content: `You are currently on cooldown for monster: ${
         found.name
-      }.\nYou can try again in \`${Math.floor(cooldown / 60)} minutes and ${
-        cooldown % 60
-      } seconds\`.`,
+      }.\nYou can try again in \`${getMinsOrSecsText(cooldown, "verbose")}\`.`,
       flags: [MessageFlags.Ephemeral],
     });
   }
