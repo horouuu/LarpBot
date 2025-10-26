@@ -116,23 +116,35 @@ export async function promptConfirmationDialog(
   });
 
   collector.on("collect", async (i) => {
-    if (i.customId === "confirm") {
-      await handleConfirm(i);
-    } else {
-      await handleCancel(i);
-    }
+    try {
+      if (i.customId === "confirm") {
+        await handleConfirm(i);
+      } else {
+        await handleCancel(i);
+      }
 
-    collector.stop();
+      collector.stop();
+    } catch (e) {
+      console.error(e);
+    }
   });
 
   collector.on("end", async (_, reason) => {
     if (reason === "time") {
-      await handleExpiry();
+      try {
+        await handleExpiry();
+      } catch (e) {
+        console.error(e);
+      }
     }
   });
 
   if (!ephemeral)
     collector.on("ignore", async (i) => {
-      await handleIgnore(i);
+      try {
+        await handleIgnore(i);
+      } catch (e) {
+        console.error(e);
+      }
     });
 }
