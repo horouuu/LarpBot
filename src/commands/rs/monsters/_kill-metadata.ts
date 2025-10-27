@@ -91,4 +91,10 @@ export const metadata: MonsterMetaData = {
     partySizes: [1],
     cooldowns: [5],
   },
+  377: {
+    // Phosani's Nightmare
+    teamBoss: false,
+    partySizes: [1],
+    cooldowns: [5 * 60],
+  },
 };
