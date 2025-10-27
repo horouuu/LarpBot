@@ -1,6 +1,7 @@
 import {
   ApplicationCommandOptionType,
   PermissionFlagsBits,
+  SlashCommandBuilder,
 } from "discord.js";
 import {
   Command,
@@ -69,53 +70,52 @@ async function handleSet(setCtx: ConfigCommandContext) {
   );
 }
 
+const configData = new SlashCommandBuilder()
+  .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
+  .setName("config")
+  .setDescription("View or change configs for this server.")
+  .addSubcommand((opt) =>
+    opt
+      .setName("view")
+      .setDescription("View all configurations for this server.")
+  )
+  .addSubcommandGroup((opt) =>
+    opt
+      .setName("set")
+      .setDescription("Set the value of a configuration variable.")
+      .addSubcommand((opt) =>
+        opt
+          .setName("action_threshold")
+          .setDescription(
+            "Change the threshold for a vote to pass or fail (excluding bots and target)."
+          )
+          .addIntegerOption((opt) =>
+            opt
+              .setName("threshold")
+              .setDescription(
+                "Number of votes it takes to pass or fail a vote (excluding bots and target)."
+              )
+              .setMinValue(1)
+              .setRequired(true)
+          )
+      )
+      .addSubcommand((opt) =>
+        opt
+          .setName("member_role")
+          .setDescription(
+            "Change the role that gatekeeper will assign to new members."
+          )
+          .addRoleOption((opt) =>
+            opt
+              .setName("role")
+              .setDescription("Role for gatekeeper to assign new members.")
+              .setRequired(true)
+          )
+      )
+  );
+
 const config = {
-  name: "config",
-  description: "View or change configs for this server.",
-  default_member_permissions: PermissionFlagsBits.Administrator.toString(),
-  options: [
-    {
-      type: ApplicationCommandOptionType.Subcommand,
-      name: "view",
-      description: "View all configurations for this server.",
-    },
-    {
-      type: ApplicationCommandOptionType.SubcommandGroup,
-      name: "set",
-      description: "Set the value of a configuration variable.",
-      options: [
-        {
-          type: ApplicationCommandOptionType.Subcommand,
-          name: "action_threshold",
-          description:
-            "Change the threshold for a vote to pass or fail (excluding bots and target).",
-          options: [
-            {
-              type: ApplicationCommandOptionType.Integer,
-              name: "threshold",
-              description:
-                "Number of votes it takes to pass or fail a vote (excluding bots and target).",
-              required: true,
-            },
-          ],
-        },
-        {
-          type: ApplicationCommandOptionType.Subcommand,
-          name: "member_role",
-          description:
-            "Change the role that gatekeeper will assign to new members.",
-          options: [
-            {
-              type: ApplicationCommandOptionType.Role,
-              name: "role",
-              description: "Role for gatekeeper to assign new members.",
-              required: true,
-            },
-          ],
-        },
-      ],
-    },
-  ],
+  ...configData.toJSON(),
   execute: async (
     commandCtx: CommandContextRequire<CommandContext, "storage">
   ) => {
