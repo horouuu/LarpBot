@@ -1,9 +1,12 @@
 import { Command, CommandContext } from "@types-local/commands";
-import { MessageFlags } from "discord.js";
+import { MessageFlags, SlashCommandBuilder } from "discord.js";
+
+const pingData = new SlashCommandBuilder()
+  .setName("ping")
+  .setDescription('Replies with "Pong!"');
 
 const ping = {
-  name: "ping",
-  description: 'Replies with "Pong!"',
+  ...pingData.toJSON(),
   execute: async (cmdContext: CommandContext) => {
     const { interaction } = cmdContext;
     if (!interaction.isChatInputCommand()) return;
