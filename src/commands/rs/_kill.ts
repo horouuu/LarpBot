@@ -137,13 +137,15 @@ async function handleJoin(
 
 async function handleDisband(
   ctx: CommandContext & { i: ButtonInteraction<CacheType>; monster: Monster }
-) {
+): Promise<boolean> {
   const { interaction, storage, i, monster } = ctx;
-  if (i.user.id !== interaction.user.id)
-    return await i.reply({
+  if (i.user.id !== interaction.user.id) {
+    await i.reply({
       content: "Only the party leader may disband the party.",
       flags: [MessageFlags.Ephemeral],
     });
+    return false;
+  }
 
   await i.update({
     embeds: [
@@ -156,6 +158,7 @@ async function handleDisband(
   });
 
   storage.delInMemory(getInMemoryPartyKey(interaction.user.id));
+  return true;
 }
 
 async function handleStart(
@@ -326,7 +329,8 @@ async function killTeamMonster(ctx: CommandContext, monster: Monster) {
       const partyFull = partyMems.length + 1 >= Math.max(...partySizes);
       await handleJoin({ ...ctx, i, monster, partyMems, partyFull, onCd });
     } else if (i.customId === "disband") {
-      await handleDisband({ ...ctx, i, monster });
+      const disbanded = await handleDisband({ ...ctx, i, monster });
+      if (disbanded) return collector.stop();
       return collector.stop();
     } else if (i.customId === "start") {
       const started = await handleStart({
