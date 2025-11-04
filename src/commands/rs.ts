@@ -79,20 +79,7 @@ const rs = {
           await checkBalance(ctx);
           break;
         case "transfer":
-          const p1 = interaction.user;
-          const p2 = interaction.options.getUser("recipient");
-          const amount = interaction.options.getString("amount");
-
-          if (!p2)
-            return await interaction.reply(
-              "You must indicate a recipient to transfer coins to."
-            );
-          if (!amount)
-            return await interaction.reply(
-              "You must indicate an amount to transfer."
-            );
-
-          await transferCoins(ctx, p1, p2, amount);
+          await transferCoins(ctx);
           break;
         case "sell":
           await sellItems(ctx);
