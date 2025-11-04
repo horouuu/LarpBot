@@ -5,9 +5,27 @@ import {
   CacheType,
   EmbedBuilder,
   MessageFlags,
+  SlashCommandSubcommandBuilder,
   User,
 } from "discord.js";
 import { Util } from "oldschooljs";
+
+export const buildTransferSubcommand = (opt: SlashCommandSubcommandBuilder) =>
+  opt
+    .setName("transfer")
+    .setDescription("Transfer coins to another user.")
+    .addUserOption((opt) =>
+      opt
+        .setName("recipient")
+        .setDescription("User to transfer coins to.")
+        .setRequired(true)
+    )
+    .addStringOption((opt) =>
+      opt
+        .setName("amount")
+        .setDescription("Amount of coins to transfer.")
+        .setRequired(true)
+    );
 
 async function executeTransfer(
   ctx: CommandContext,

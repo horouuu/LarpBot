@@ -12,9 +12,21 @@ import {
   ComponentType,
   EmbedBuilder,
   MessageFlags,
+  SlashCommandSubcommandBuilder,
   User,
 } from "discord.js";
 import { metadata } from "./monsters/_kill-metadata.js";
+
+export const buildKillSubcommand = (opt: SlashCommandSubcommandBuilder) =>
+  opt
+    .setName("kill")
+    .setDescription("Simulate killing a monster.")
+    .addStringOption((opt) =>
+      opt
+        .setName("monster")
+        .setDescription("Name of the monster to simulate killing.")
+        .setRequired(true)
+    );
 
 function getInMemoryPartyKey(userId: string) {
   return `${userId}:parties`;

@@ -8,6 +8,7 @@ import {
   ComponentType,
   EmbedBuilder,
   MessageFlags,
+  SlashCommandSubcommandBuilder,
   User,
 } from "discord.js";
 import { Util } from "oldschooljs";
@@ -26,6 +27,23 @@ enum StakeEmoji {
   P_LOSER = "💀",
   P_WINNER = "🏆",
 }
+
+export const buildStakeSubcommand = (opt: SlashCommandSubcommandBuilder) =>
+  opt
+    .setName("stake")
+    .setDescription("Simulates a stake between you and another player.")
+    .addUserOption((opt) =>
+      opt
+        .setName("opponent")
+        .setDescription("Person to challenge as your opponent.")
+        .setRequired(true)
+    )
+    .addStringOption((opt) =>
+      opt
+        .setName("stake")
+        .setDescription("Amount of gold to stake")
+        .setRequired(false)
+    );
 
 export function stake(p1: User, p2: User) {
   const styleBonuses: StyleBonuses = {

@@ -2,7 +2,35 @@ import { CommandContext } from "@types-local/commands";
 import { Clues } from "oldschooljs";
 import { getEmptyClueData, getTierColor, parseLoot } from "./_rs-utils.js";
 import { toKMB } from "oldschooljs/dist/util/smallUtils.js";
-import { EmbedBuilder, MessageFlags } from "discord.js";
+import {
+  EmbedBuilder,
+  MessageFlags,
+  SlashCommandSubcommandGroupBuilder,
+} from "discord.js";
+
+export const buildClueSubCommandGroup = (
+  opt: SlashCommandSubcommandGroupBuilder
+) =>
+  opt
+    .setName("clue")
+    .setDescription("Run clue-related commands.")
+    .addSubcommand((opt) =>
+      opt
+        .setName("open")
+        .setDescription("Open a random clue casket!")
+        .addNumberOption((opt) =>
+          opt
+            .setName("number")
+            .setDescription(
+              "Number of clues to open. More than one may incur extra cooldown per clue."
+            )
+            .setMinValue(1)
+            .setRequired(false)
+        )
+    )
+    .addSubcommand((opt) =>
+      opt.setName("stats").setDescription("View your clue stats.")
+    );
 
 const clueList = [
   { tier: Clues.Medium, num: 1, name: "Medium" },

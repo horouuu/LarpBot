@@ -10,8 +10,22 @@ import {
   EmbedBuilder,
   InteractionCallbackResponse,
   MessageFlags,
+  SlashCommandSubcommandGroupBuilder,
 } from "discord.js";
 import { Item, Items, Util } from "oldschooljs";
+
+export const buildBankSubcommandGroup = (
+  opt: SlashCommandSubcommandGroupBuilder
+) =>
+  opt
+    .setName("bank")
+    .setDescription("View your bank.")
+    .addSubcommand((opt) =>
+      opt.setName("open").setDescription("Open your bank.")
+    )
+    .addSubcommand((opt) =>
+      opt.setName("sellall").setDescription("Sell all items from your bank.")
+    );
 
 export async function getInventoryEmbeds(ctx: CommandContext) {
   const { interaction, storage } = ctx;

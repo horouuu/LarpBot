@@ -1,6 +1,23 @@
 import { CommandContext } from "@types-local/commands";
 import { EmojiEnum } from "@utils";
-import { APIEmbedField, EmbedBuilder, MessageFlags } from "discord.js";
+import {
+  APIEmbedField,
+  EmbedBuilder,
+  MessageFlags,
+  SlashCommandSubcommandGroupBuilder,
+} from "discord.js";
+
+export const buildLbSubcommandGroup = (
+  opt: SlashCommandSubcommandGroupBuilder
+) =>
+  opt
+    .setName("lb")
+    .setDescription("View the leaderboards for this guild.")
+    .addSubcommand((opt) =>
+      opt
+        .setName("coins")
+        .setDescription("View this guild's leaderboard for coins.")
+    );
 
 export async function showCoinLb(ctx: CommandContext) {
   const { interaction, storage } = ctx;

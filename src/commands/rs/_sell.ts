@@ -1,7 +1,29 @@
 import { promptConfirmationDialog } from "../lib/_cmd-utils.js";
 import { CommandContext } from "@types-local/commands";
-import { ButtonInteraction, EmbedBuilder, MessageFlags } from "discord.js";
+import {
+  ButtonInteraction,
+  EmbedBuilder,
+  MessageFlags,
+  SlashCommandSubcommandBuilder,
+} from "discord.js";
 import { Items } from "oldschooljs";
+
+export const buildSellSubcommand = (opt: SlashCommandSubcommandBuilder) =>
+  opt
+    .setName("sell")
+    .setDescription("Sell items from your bank.")
+    .addStringOption((opt) =>
+      opt
+        .setName("item")
+        .setDescription("Name of the item to sell.")
+        .setRequired(true)
+    )
+    .addIntegerOption((opt) =>
+      opt
+        .setName("quantity")
+        .setDescription("Quantity of the item to sell.")
+        .setRequired(false)
+    );
 
 export async function sellItems(ctx: CommandContext) {
   const { interaction, storage } = ctx;
