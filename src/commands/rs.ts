@@ -45,17 +45,7 @@ const rs = {
           if (cmdGroup === "clue") {
             await openClue(ctx);
           } else if (cmdGroup === "bank") {
-            const out = await getInventoryEmbeds(ctx);
-            if (out.embeds.length === 0)
-              return await interaction.reply("You have no items!");
-
-            const msg = await interaction.reply({
-              embeds: [out.embeds[0]],
-              components: [out.actionRow],
-              withResponse: true,
-            });
-
-            await handleBankPages(ctx, msg, out);
+            await handleBankPages(ctx);
           }
           break;
         case "kill":

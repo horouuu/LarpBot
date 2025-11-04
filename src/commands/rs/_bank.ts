@@ -106,12 +106,19 @@ export async function getInventoryEmbeds(ctx: CommandContext) {
   return { embeds, actionRow };
 }
 
-export async function handleBankPages(
-  ctx: CommandContext,
-  msg: InteractionCallbackResponse<boolean>,
-  components: Awaited<ReturnType<typeof getInventoryEmbeds>>
-) {
+export async function handleBankPages(ctx: CommandContext) {
   const { interaction } = ctx;
+
+  const components = await getInventoryEmbeds(ctx);
+  if (components.embeds.length === 0)
+    return await interaction.reply("You have no items!");
+
+  const msg = await interaction.reply({
+    embeds: [components.embeds[0]],
+    components: [components.actionRow],
+    withResponse: true,
+  });
+
   const collector = msg.resource?.message?.createMessageComponentCollector({
     filter: (i) =>
       (i.customId === "bank_back" || i.customId === "bank_next") &&
