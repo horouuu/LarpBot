@@ -51,14 +51,29 @@ async function executeTransfer(
   });
 }
 
-export async function transferCoins(
-  ctx: CommandContext,
-  p1: User,
-  p2: User,
-  amountKmb: string
-) {
+export async function transferCoins(ctx: CommandContext) {
   const { interaction, storage } = ctx;
-  const value = Util.fromKMB(amountKmb);
+  const p1 = interaction.user;
+  const p2 = interaction.options.getUser("recipient");
+  const amount = interaction.options.getString("amount");
+
+  if (!p2)
+    return await interaction.reply({
+      content: "You must indicate a recipient to transfer coins to.",
+      flags: [MessageFlags.Ephemeral],
+    });
+  if (!amount)
+    return await interaction.reply({
+      content: "You must indicate an amount to transfer.",
+      flags: [MessageFlags.Ephemeral],
+    });
+
+  const value = Util.fromKMB(amount);
+  if (value <= 0)
+    return await interaction.reply({
+      content: "You must indicate an amount above 0.",
+      flags: [MessageFlags.Ephemeral],
+    });
 
   const owned = await storage.getCoins(p1.id);
   if (owned < value || Number.isNaN(value) || !value) {
