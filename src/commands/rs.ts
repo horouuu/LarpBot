@@ -24,14 +24,14 @@ const rsData = new SlashCommandBuilder()
   .setName("rs")
   .setDescription("Run a command related to OSRS.")
   .addSubcommandGroup(buildClueSubcommandGroup)
+  .addSubcommandGroup(buildLbSubcommandGroup)
+  .addSubcommandGroup(buildBankSubcommandGroup)
   .addSubcommand(buildKillSubcommand)
   .addSubcommand(buildKcSubcommand)
-  .addSubcommandGroup(buildBankSubcommandGroup)
   .addSubcommand(buildStakeSubcommand)
   .addSubcommand(buildBalanceSubcommand)
   .addSubcommand(buildTransferSubcommand)
-  .addSubcommand(buildSellSubcommand)
-  .addSubcommandGroup(buildLbSubcommandGroup);
+  .addSubcommand(buildSellSubcommand);
 
 const rs = {
   ...rsData.toJSON(),
