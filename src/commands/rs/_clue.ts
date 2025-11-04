@@ -66,10 +66,11 @@ export async function openClue(ctx: CommandContext) {
   const bulkLimit = Math.floor(300 / cdSecsPerClue);
   if (await checkCooldown(ctx)) return;
   if (numberToOpen > bulkLimit) {
-    return await interaction.reply({
+    await interaction.reply({
       content: `You may only open up to five minutes' worth of clues at a time (${bulkLimit}).`,
       flags: [MessageFlags.Ephemeral],
     });
+    return;
   }
 
   const roll = Math.round(Math.random() * 3);

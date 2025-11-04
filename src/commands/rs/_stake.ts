@@ -366,22 +366,28 @@ export async function startStake(ctx: CommandContext) {
   const coins = interaction.options.getString("stake") ?? "0";
   const parsedCoins = Util.fromKMB(coins);
 
-  if (Number.isNaN(parsedCoins))
-    return await interaction.reply({
+  if (Number.isNaN(parsedCoins)) {
+    await interaction.reply({
       content: `${coins} is not a valid input for the stake amount.`,
       flags: [MessageFlags.Ephemeral],
     });
-  if (!p2)
-    return await interaction.reply({
+    return;
+  }
+  if (!p2) {
+    await interaction.reply({
       content: "You must specify an opponent to stake.",
       flags: [MessageFlags.Ephemeral],
     });
+    return;
+  }
 
-  if (p1.id === p2.id)
-    return await interaction.reply({
+  if (p1.id === p2.id) {
+    await interaction.reply({
       content: "You cannot stake yourself!",
       flags: [MessageFlags.Ephemeral],
     });
+    return;
+  }
 
   await confirmStake(ctx, p1, p2, coins);
 }

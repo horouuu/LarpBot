@@ -57,30 +57,38 @@ export async function transferCoins(ctx: CommandContext) {
   const p2 = interaction.options.getUser("recipient");
   const amount = interaction.options.getString("amount");
 
-  if (!p2)
-    return await interaction.reply({
+  if (!p2) {
+    await interaction.reply({
       content: "You must indicate a recipient to transfer coins to.",
       flags: [MessageFlags.Ephemeral],
     });
-  if (!amount)
-    return await interaction.reply({
+    return;
+  }
+
+  if (!amount) {
+    await interaction.reply({
       content: "You must indicate an amount to transfer.",
       flags: [MessageFlags.Ephemeral],
     });
+    return;
+  }
 
   const value = Util.fromKMB(amount);
-  if (value <= 0)
-    return await interaction.reply({
+  if (value <= 0) {
+    await interaction.reply({
       content: "You must indicate an amount above 0.",
       flags: [MessageFlags.Ephemeral],
     });
+    return;
+  }
 
   const owned = await storage.getCoins(p1.id);
   if (owned < value || Number.isNaN(value) || !value) {
-    return await interaction.reply({
+    await interaction.reply({
       content: "You do not have enough coins for this transfer.",
       flags: [MessageFlags.Ephemeral],
     });
+    return;
   } else {
     const handleConfirm = async (i: ButtonInteraction) =>
       await executeTransfer(ctx, p1, p2, value, i);

@@ -8,7 +8,6 @@ import {
   ButtonStyle,
   ComponentType,
   EmbedBuilder,
-  InteractionCallbackResponse,
   MessageFlags,
   SlashCommandSubcommandGroupBuilder,
 } from "discord.js";
@@ -110,8 +109,10 @@ export async function handleBankPages(ctx: CommandContext) {
   const { interaction } = ctx;
 
   const components = await getInventoryEmbeds(ctx);
-  if (components.embeds.length === 0)
-    return await interaction.reply("You have no items!");
+  if (components.embeds.length === 0) {
+    await interaction.reply("You have no items!");
+    return;
+  }
 
   const msg = await interaction.reply({
     embeds: [components.embeds[0]],
@@ -211,7 +212,7 @@ export async function sellAllItems(ctx: CommandContext) {
   const { totalValue, newBank } = await calculateTotalBankValue(ctx);
 
   if (totalValue === 0) {
-    return await interaction.reply({
+    await interaction.reply({
       embeds: [
         new EmbedBuilder()
           .setDescription(`You have nothing in your bank to sell!`)
@@ -219,6 +220,7 @@ export async function sellAllItems(ctx: CommandContext) {
       ],
       flags: [MessageFlags.Ephemeral],
     });
+    return;
   }
 
   const handleSell = async (i: ButtonInteraction) => {

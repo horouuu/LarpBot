@@ -1,4 +1,7 @@
-import { CommandContext } from "@types-local/commands";
+import {
+  CommandContext,
+  HandlerMap,
+} from "@types-local/commands";
 import { SlashCommandBuilder } from "discord.js";
 import {
   buildClueSubCommandGroup as buildClueSubcommandGroup,
@@ -9,7 +12,6 @@ import { catchAllInteractionReply } from "@utils";
 import { buildKillSubcommand, killMonster } from "./rs/_kill.js";
 import {
   buildBankSubcommandGroup,
-  getInventoryEmbeds,
   handleBankPages,
   sellAllItems,
 } from "./rs/_bank.js";
@@ -33,6 +35,26 @@ const rsData = new SlashCommandBuilder()
   .addSubcommand(buildTransferSubcommand)
   .addSubcommand(buildSellSubcommand);
 
+const handlerMap: HandlerMap = {
+  clue: {
+    open: openClue,
+    stats: showClueStats,
+  },
+  bank: {
+    open: handleBankPages,
+    sellall: sellAllItems,
+  },
+  lb: {
+    coins: showCoinLb,
+  },
+  kill: killMonster,
+  kc: getKc,
+  stake: startStake,
+  balance: checkBalance,
+  transfer: transferCoins,
+  sell: sellItems,
+};
+
 const rs = {
   ...rsData.toJSON(),
   async execute(ctx: CommandContext) {
@@ -40,48 +62,17 @@ const rs = {
     const cmd = interaction.options.getSubcommand();
     const cmdGroup = interaction.options.getSubcommandGroup();
     try {
-      switch (cmd) {
-        case "open":
-          if (cmdGroup === "clue") {
-            await openClue(ctx);
-          } else if (cmdGroup === "bank") {
-            await handleBankPages(ctx);
-          }
-          break;
-        case "kill":
-          await killMonster(ctx);
-          break;
-        case "kc":
-          await getKc(ctx);
-          break;
-        case "stats":
-          if (cmdGroup === "clue") {
-            await showClueStats(ctx);
-          }
-          break;
-        case "sellall":
-          await sellAllItems(ctx);
-          break;
-        case "stake":
-          await startStake(ctx);
-          break;
-        case "balance":
-          await checkBalance(ctx);
-          break;
-        case "transfer":
-          await transferCoins(ctx);
-          break;
-        case "sell":
-          await sellItems(ctx);
-          break;
-        case "coins":
-          if (cmdGroup === "lb") {
-            await showCoinLb(ctx);
-          }
-          break;
-        default:
-          throw new Error("Invalid input.");
-      }
+      const handlerEntry = handlerMap[cmdGroup ?? cmd];
+      if (cmdGroup && typeof handlerEntry === "function")
+        throw new Error("Something went wrong.");
+
+      const handler =
+        typeof handlerEntry === "function"
+          ? handlerEntry
+          : cmdGroup && handlerEntry?.[cmd];
+
+      if (!handler) throw new Error("Invalid command.");
+      await handler(ctx);
     } catch (e) {
       console.error(e);
       catchAllInteractionReply(interaction, (e as Error).message);
