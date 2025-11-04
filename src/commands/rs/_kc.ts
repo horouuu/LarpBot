@@ -22,9 +22,10 @@ export async function getKc(ctx: CommandContext) {
   );
 
   if (!found) {
-    return await interaction.reply({
+    await interaction.reply({
       content: `Monster or alias \`${monster}\` not found.`,
     });
+    return;
   }
 
   const kc = await storage.getKc(interaction.user.id, found.id);

@@ -23,10 +23,11 @@ export async function showCoinLb(ctx: CommandContext) {
   const { interaction, storage } = ctx;
   const members = await interaction.guild?.members.fetch();
   if (!members) {
-    return await interaction.reply({
+    await interaction.reply({
       content: "Something went wrong.",
       flags: [MessageFlags.Ephemeral],
     });
+    return;
   }
 
   const emojis = [

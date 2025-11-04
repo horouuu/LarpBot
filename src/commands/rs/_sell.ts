@@ -43,10 +43,11 @@ export async function sellItems(ctx: CommandContext) {
   });
 
   if (found.length === 0) {
-    return await interaction.reply({
+    await interaction.reply({
       content: `No items in your bank match the input \`${itemName}\`!`,
       flags: [MessageFlags.Ephemeral],
     });
+    return;
   } else if (found.length > 1) {
     const numShowItems = 3;
 
@@ -57,22 +58,24 @@ export async function sellItems(ctx: CommandContext) {
       .map((i) => `- \`${i.name}\``)
       .slice(0, numShowItems)
       .join("\n");
-    return await interaction.reply({
+    await interaction.reply({
       content: `The input \`${itemName}\` is too ambiguous! Did you mean one of the following items?\n${foundNames}${
         rest > 0 ? `\n...and ${rest} more item(s).` : ""
       }`,
       flags: [MessageFlags.Ephemeral],
     });
+    return;
   }
 
   const item = Items.find((i) => i.id.toString() === found[0]);
   if (!item) {
-    return await interaction.reply({
+    await interaction.reply({
       content: `No items in your bank match the input \`${itemName}\`!`,
       flags: [MessageFlags.Ephemeral],
     });
+    return;
   } else if (item.price === 0) {
-    return await interaction.reply({
+    await interaction.reply({
       embeds: [
         new EmbedBuilder()
           .setDescription(`\`${item.name}\` cannot be sold!`)
@@ -80,6 +83,7 @@ export async function sellItems(ctx: CommandContext) {
       ],
       flags: [MessageFlags.Ephemeral],
     });
+    return;
   }
 
   const itemNum = userInv[item.id.toString()];
@@ -161,9 +165,10 @@ export async function sellItems(ctx: CommandContext) {
       parseInt(itemNum) > 0
         ? `You do not have enough of the item \`${item.name}\` to sell. You only have \`${itemNum}\`.`
         : `You don't have any \`${itemName}\` in your bank!`;
-    return await interaction.reply({
+    await interaction.reply({
       content: responseMsg,
       flags: [MessageFlags.Ephemeral],
     });
+    return;
   }
 }

@@ -420,12 +420,13 @@ export async function killMonster(ctx: CommandContext) {
   const cooldown = await storage.checkKillCd(interaction.user.id, found.id);
 
   if (cooldown > 0) {
-    return await interaction.reply({
+    await interaction.reply({
       content: `You are currently on cooldown for monster: ${
         found.name
       }.\nYou can try again in \`${getMinsOrSecsText(cooldown, "verbose")}\`.`,
       flags: [MessageFlags.Ephemeral],
     });
+    return;
   }
 
   if (found.id in metadata) {
