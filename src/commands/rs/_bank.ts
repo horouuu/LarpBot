@@ -8,7 +8,6 @@ import {
   ButtonStyle,
   ComponentType,
   EmbedBuilder,
-  InteractionCallbackResponse,
   MessageFlags,
   SlashCommandSubcommandGroupBuilder,
 } from "discord.js";

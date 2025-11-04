@@ -1,6 +1,5 @@
 import {
   CommandContext,
-  CommandHandler,
   HandlerMap,
 } from "@types-local/commands";
 import { SlashCommandBuilder } from "discord.js";
