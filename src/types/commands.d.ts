@@ -22,3 +22,9 @@ export interface Command
   execute(commandCtx: CommandContextRequire<CommandContext>): Promise<void>;
   execute(commandCtx: CommandContext): Promise<void>;
 }
+
+export type CommandHandler = (ctx: CommandContext) => Promise<void>;
+export type HandlerMap = Record<
+  string,
+  CommandHandler | Record<string, CommandHandler>
+>;
