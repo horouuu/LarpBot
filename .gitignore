@@ -3,5 +3,6 @@ node_modules
 !*.env.example
 build
 test.*
+_test.*
 /src/scripts/*.json
 /src/_test/*
