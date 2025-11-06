@@ -97,4 +97,10 @@ export const metadata: MonsterMetaData = {
     partySizes: [1],
     cooldowns: [5 * 60],
   },
+  10402: {
+    //Colossal Hydra
+    teamBoss: false,
+    partySizes: [1],
+    cooldowns: [15],
+  },
 };
