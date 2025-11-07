@@ -52,13 +52,11 @@ export async function priceCheck(ctx: CommandContext) {
       new EmbedBuilder()
         .setTitle(`Hourly prices for ${item.name}`)
         .setDescription(
-          `Average High Price: \`${Util.toKMB(
-            data.avgHighPrice
-          )}\`\nHigh Price Volume: \`${
+          `Average High Price: \`${data.avgHighPrice.toLocaleString()}\`\nHigh Price Volume: \`${
             data.highPriceVolume
-          }\`\n\nAverage Low Price: \`${Util.toKMB(
-            data.avgLowPrice
-          )}\`\nLow Price Volume: \`${data.lowPriceVolume}\``
+          }\`\n\nAverage Low Price: \`${data.avgLowPrice.toLocaleString()}\`\nLow Price Volume: \`${
+            data.lowPriceVolume
+          }\``
         )
         .setFooter({
           text: `Data taken at ${dateString} UTC`,
