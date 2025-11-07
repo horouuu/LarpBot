@@ -102,7 +102,10 @@ export abstract class Storage {
 
   abstract update1hPrices(data: DB1hPricesData): Promise<void>;
 
-  abstract check1hPrice(itemId: number): Promise<DB1hPricesData | null>;
+  abstract check1hPrice(itemId: number): Promise<{
+    data: DB1hPricesData["data"][number];
+    timestamp: DB1hPricesData["timestamp"];
+  } | null>;
 }
 
 export type { PersistedKey, PersistedConfigs };

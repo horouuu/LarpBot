@@ -602,18 +602,31 @@ export class RedisStorage implements Storage {
   }
 
   public async update1hPrices(data: DB1hPricesData) {
-    const key = `rs:1hprices`;
-    await this._hSet(key, data);
+    const key = `rs:1hprices:data`;
+    const tsKey = `rs:1hprices:timestamp`;
+    const toStore = Object.fromEntries(
+      Object.entries(data.data).map(([k, v]) => [k, JSON.stringify(v)])
+    );
+
+    await this._hSet(key, toStore);
+    await this.set(tsKey, data.timestamp);
     await this._setTtl(key, 3600);
+    await this._setTtl(tsKey, 3600);
   }
 
   public async check1hPrice(itemId: number) {
-    const key = `rs:1hprices`;
+    const key = `rs:1hprices:data`;
+    const tsKey = `rs:1hprices:timestamp`;
     const out = await this._hGet(key, itemId.toString());
-    if (out === null) return out;
+    const ts = await this.get(tsKey);
+    if (out === null || ts === null) return null;
 
-    const outJson = JSON.parse(out);
-    return outJson;
+    const outJson = JSON.parse(out) as { [k: string]: string };
+    const outData = Object.fromEntries(
+      Object.entries(outJson).map(([k, v]) => [k, JSON.parse(v)])
+    ) as DB1hPricesData["data"][number];
+
+    return { data: outData, timestamp: ts };
   }
 
   public async destroy(): Promise<void> {
