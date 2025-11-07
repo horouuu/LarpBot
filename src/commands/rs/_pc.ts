@@ -4,8 +4,8 @@ import {
   MessageFlags,
   SlashCommandSubcommandBuilder,
 } from "discord.js";
-import { DB1hPricesData, findItemFuzzy } from "./_rs-utils";
-import { toKMB } from "oldschooljs/dist/util";
+import { DB1hPricesData, findItemFuzzy } from "./_rs-utils.js";
+import { Util } from "oldschooljs";
 
 export const buildPcSubcommand = (opt: SlashCommandSubcommandBuilder) =>
   opt
@@ -52,11 +52,11 @@ export async function priceCheck(ctx: CommandContext) {
       new EmbedBuilder()
         .setTitle(`Hourly prices for ${item.name}`)
         .setDescription(
-          `Average High Price: \`${toKMB(
+          `Average High Price: \`${Util.toKMB(
             data.avgHighPrice
           )}\`\nHigh Price Volume: \`${
             data.highPriceVolume
-          }\`\n\nAverage Low Price: \`${toKMB(
+          }\`\n\nAverage Low Price: \`${Util.toKMB(
             data.avgLowPrice
           )}\`\nLow Price Volume: \`${data.lowPriceVolume}\``
         )
