@@ -9,6 +9,7 @@ import {
 } from "@storage";
 import { OrNullEntries } from "@types-local/util";
 import {
+  DB1hPricesData,
   DBClueData,
   getEmptyClueData,
   getClueKey as getRsClueKey,
@@ -127,9 +128,9 @@ export class RedisStorage implements Storage {
     }
   }
 
-  private async hSet(
+  private async _hSet<T extends Record<string | number, any>>(
     key: string,
-    obj: { [str: string | number]: string | number }
+    obj: T
   ) {
     try {
       if (!this._checkType(key, RedisTypes.HASH)) {
@@ -524,6 +525,15 @@ export class RedisStorage implements Storage {
     return kc !== null ? Number(kc) : 0;
   }
 
+  private async _setTtl(key: string, cdSecs: number) {
+    try {
+      await this._client.sendCommand(["EXPIRE", key, cdSecs.toString()]);
+    } catch (e) {
+      console.error(e);
+      throw new Error("Failed to set expiry in DB.");
+    }
+  }
+
   private async _setCd(key: string, cdKey: string, cdSecs: number) {
     await this._hIncrByFields(key, { [cdKey]: 1 });
     try {
@@ -589,6 +599,34 @@ export class RedisStorage implements Storage {
       parseInt(c) ? [[users[i], parseInt(c)]] : []
     );
     return out as [string, number][];
+  }
+
+  public async update1hPrices(data: DB1hPricesData) {
+    const key = `rs:1hprices:data`;
+    const tsKey = `rs:1hprices:timestamp`;
+    const toStore = Object.fromEntries(
+      Object.entries(data.data).map(([k, v]) => [k, JSON.stringify(v)])
+    );
+
+    await this._hSet(key, toStore);
+    await this.set(tsKey, data.timestamp);
+    await this._setTtl(key, 3600);
+    await this._setTtl(tsKey, 3600);
+  }
+
+  public async check1hPrice(itemId: number) {
+    const key = `rs:1hprices:data`;
+    const tsKey = `rs:1hprices:timestamp`;
+    const out = await this._hGet(key, itemId.toString());
+    const ts = await this.get(tsKey);
+    if (out === null || ts === null) return null;
+
+    const outJson = JSON.parse(out) as { [k: string]: string };
+    const outData = Object.fromEntries(
+      Object.entries(outJson).map(([k, v]) => [k, JSON.parse(v)])
+    ) as DB1hPricesData["data"][number];
+
+    return { data: outData, timestamp: ts };
   }
 
   public async destroy(): Promise<void> {

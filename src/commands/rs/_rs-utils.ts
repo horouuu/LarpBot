@@ -1,5 +1,5 @@
 import { ColorResolvable } from "discord.js";
-import { Item, Util } from "oldschooljs";
+import { Item, Items, Util } from "oldschooljs";
 import { MonsterData } from "oldschooljs/dist/meta/monsterData";
 import SimpleMonster from "oldschooljs/dist/structures/SimpleMonster";
 
@@ -9,6 +9,18 @@ export type DBClueData<T extends string | number> = {
   elite: T;
   master: T;
   clueCoins: T;
+};
+
+export type DB1hPricesData = {
+  data: {
+    [itemId: number]: {
+      avgHighPrice: number;
+      highPriceVolume: number;
+      avgLowPrice: number;
+      lowPriceVolume: number;
+    };
+  };
+  timestamp: string;
 };
 
 export function getEmptyClueData<T extends string | number = number>(
@@ -97,4 +109,10 @@ export function getMinsOrSecsText(
     secs % 60
   } second${getS(secs % 60)}`;
   return mode === "verbose" ? verbose : out;
+}
+
+export function findItemFuzzy(input: string) {
+  return Items.find((i) =>
+    i.name.toLowerCase().includes(input.trim().toLowerCase())
+  );
 }

@@ -1,5 +1,5 @@
 import { OrNullEntries } from "@types-local/util";
-import { DBClueData } from "@commands/rs/_rs-utils";
+import { DB1hPricesData, DBClueData } from "@commands/rs/_rs-utils";
 import { Item } from "oldschooljs";
 
 const persistedConfigs = ["actionThreshold", "memberRole"] as const;
@@ -99,6 +99,13 @@ export abstract class Storage {
   ): Promise<void>;
 
   abstract getCoinsData(users: string[]): Promise<[string, number][]>;
+
+  abstract update1hPrices(data: DB1hPricesData): Promise<void>;
+
+  abstract check1hPrice(itemId: number): Promise<{
+    data: DB1hPricesData["data"][number];
+    timestamp: DB1hPricesData["timestamp"];
+  } | null>;
 }
 
 export type { PersistedKey, PersistedConfigs };
