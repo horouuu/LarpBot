@@ -9,6 +9,7 @@ import {
 } from "@storage";
 import { OrNullEntries } from "@types-local/util";
 import {
+  DB1hPricesData,
   DBClueData,
   getEmptyClueData,
   getClueKey as getRsClueKey,
@@ -127,9 +128,9 @@ export class RedisStorage implements Storage {
     }
   }
 
-  private async hSet(
+  private async _hSet<T extends Record<string | number, any>>(
     key: string,
-    obj: { [str: string | number]: string | number }
+    obj: T
   ) {
     try {
       if (!this._checkType(key, RedisTypes.HASH)) {
@@ -524,6 +525,15 @@ export class RedisStorage implements Storage {
     return kc !== null ? Number(kc) : 0;
   }
 
+  private async _setTtl(key: string, cdSecs: number) {
+    try {
+      await this._client.sendCommand(["EXPIRE", key, cdSecs.toString()]);
+    } catch (e) {
+      console.error(e);
+      throw new Error("Failed to set expiry in DB.");
+    }
+  }
+
   private async _setCd(key: string, cdKey: string, cdSecs: number) {
     await this._hIncrByFields(key, { [cdKey]: 1 });
     try {
@@ -589,6 +599,21 @@ export class RedisStorage implements Storage {
       parseInt(c) ? [[users[i], parseInt(c)]] : []
     );
     return out as [string, number][];
+  }
+
+  public async update1hPrices(data: DB1hPricesData) {
+    const key = `rs:1hprices`;
+    await this._hSet(key, data);
+    await this._setTtl(key, 3600);
+  }
+
+  public async check1hPrice(itemId: number) {
+    const key = `rs:1hprices`;
+    const out = await this._hGet(key, itemId.toString());
+    if (out === null) return out;
+
+    const outJson = JSON.parse(out);
+    return outJson;
   }
 
   public async destroy(): Promise<void> {
