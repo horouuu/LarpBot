@@ -1,5 +1,6 @@
 import { persistedConfigs, PersistedKey } from "@storage";
 import { CommandContext } from "@types-local/commands";
+import { MessageFlags } from "discord.js";
 
 export enum EmojiEnum {
   EMOJI_AYE = "✅",
@@ -34,11 +35,14 @@ async function catchAllInteractionReply(
   errMsg: string = ERR_MSG_GENERIC
 ) {
   if (!errMsg) errMsg = ERR_MSG_GENERIC;
+
   if (interaction.isRepliable()) {
     if (interaction.replied || interaction.deferred) {
       interaction.followUp(errMsg).catch((e) => console.error(e));
     } else {
-      interaction.reply(errMsg).catch((e) => console.error(e));
+      interaction
+        .reply({ content: errMsg, flags: [MessageFlags.Ephemeral] })
+        .catch((e) => console.error(e));
     }
   } else {
     console.error(
