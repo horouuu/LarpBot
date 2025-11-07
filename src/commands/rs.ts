@@ -1,7 +1,4 @@
-import {
-  CommandContext,
-  HandlerMap,
-} from "@types-local/commands";
+import { CommandContext, HandlerMap } from "@types-local/commands";
 import { SlashCommandBuilder } from "discord.js";
 import {
   buildClueSubCommandGroup as buildClueSubcommandGroup,
@@ -21,6 +18,7 @@ import { buildTransferSubcommand, transferCoins } from "./rs/_transfer.js";
 import { buildSellSubcommand, sellItems } from "./rs/_sell.js";
 import { buildLbSubcommandGroup, showCoinLb } from "./rs/_lb.js";
 import { buildKcSubcommand, getKc } from "./rs/_kc.js";
+import { buildPcSubcommand, priceCheck } from "./rs/_pc.js";
 
 const rsData = new SlashCommandBuilder()
   .setName("rs")
@@ -33,7 +31,8 @@ const rsData = new SlashCommandBuilder()
   .addSubcommand(buildStakeSubcommand)
   .addSubcommand(buildBalanceSubcommand)
   .addSubcommand(buildTransferSubcommand)
-  .addSubcommand(buildSellSubcommand);
+  .addSubcommand(buildSellSubcommand)
+  .addSubcommand(buildPcSubcommand);
 
 const handlerMap: HandlerMap = {
   clue: {
@@ -53,6 +52,7 @@ const handlerMap: HandlerMap = {
   balance: checkBalance,
   transfer: transferCoins,
   sell: sellItems,
+  pc: priceCheck,
 };
 
 const rs = {
