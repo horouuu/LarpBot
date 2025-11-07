@@ -12,12 +12,15 @@ export type DBClueData<T extends string | number> = {
 };
 
 export type DB1hPricesData = {
-  [itemId: number]: {
-    avgHighPrice: number;
-    highPriceVolume: number;
-    avgLowPrice: number;
-    lowPriceVolume: number;
+  data: {
+    [itemId: number]: {
+      avgHighPrice: number;
+      highPriceVolume: number;
+      avgLowPrice: number;
+      lowPriceVolume: number;
+    };
   };
+  timestamp: string;
 };
 
 export function getEmptyClueData<T extends string | number = number>(
