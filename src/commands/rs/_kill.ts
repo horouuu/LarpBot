@@ -10,6 +10,7 @@ import {
   CacheType,
   ChatInputCommandInteraction,
   ComponentType,
+  DiscordAPIError,
   EmbedBuilder,
   MessageFlags,
   SlashCommandSubcommandBuilder,
@@ -337,26 +338,36 @@ async function killTeamMonster(ctx: CommandContext, monster: Monster) {
 
   const onCd: { [userId: string]: number } = {};
   collector?.on("collect", async (i) => {
-    if (i.customId === "join") {
-      const partyFull = partyMems.length + 1 >= Math.max(...partySizes);
-      await handleJoin({ ...ctx, i, monster, partyMems, partyFull, onCd });
-    } else if (i.customId === "disband") {
-      const disbanded = await handleDisband({ ...ctx, i, monster });
-      if (disbanded) return collector.stop();
-      return collector.stop();
-    } else if (i.customId === "start") {
-      const started = await handleStart({
-        ...ctx,
-        i,
-        monster,
-        partyMems,
-        partySizes,
-        cooldowns,
-      });
+    try {
+      if (i.customId === "join") {
+        const partyFull = partyMems.length + 1 >= Math.max(...partySizes);
+        await handleJoin({ ...ctx, i, monster, partyMems, partyFull, onCd });
+      } else if (i.customId === "disband") {
+        const disbanded = await handleDisband({ ...ctx, i, monster });
+        if (disbanded) return collector.stop();
+        return collector.stop();
+      } else if (i.customId === "start") {
+        const started = await handleStart({
+          ...ctx,
+          i,
+          monster,
+          partyMems,
+          partySizes,
+          cooldowns,
+        });
 
-      if (started) return collector.stop();
-    } else {
-      await handleRemove({ ...ctx, i, monster, partyMems });
+        if (started) return collector.stop();
+      } else {
+        await handleRemove({ ...ctx, i, monster, partyMems });
+      }
+    } catch (e) {
+      console.log(
+        `\nError occurred during /kill command:\n ${JSON.stringify(
+          (e as DiscordAPIError).rawError,
+          null,
+          2
+        )}\n`
+      );
     }
   });
 }
