@@ -6,6 +6,12 @@ for (const [id, item] of Object.entries(json)) {
   if (curr[id]) {
     item.price = Math.round((curr[id].high + curr[id].low) / 2);
   }
+
+  // TEMPORARY PATCH
+  // TODO: REMOVE ON FIX
+  if (item.name.includes("javelin tips")) {
+    item.name = item.name.split(" ")[0] + " javelin heads";
+  }
 }
 
 fs.writeFileSync(
